@@ -1,31 +1,44 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension with React & Webpack",
-  "description": "A chrome extension boilerplate built with React 17, Webpack 5, and Webpack Dev Server 4",
-  "options_page": "options.html",
-  "background": { "service_worker": "background.bundle.js" },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon-34.png"
-  },
-  "chrome_url_overrides": {
-    "newtab": "newtab.html"
-  },
+  "name": "ChatSeed",
+  "version": "1.0.0",
+  "description": "Bridge your ChatGPT conversations - save context from any chat and seamlessly continue in new conversations.",
   "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
     "128": "icon-128.png"
   },
+  "homepage_url": "https://revlytiq.io/ChatSeed",
+  "permissions": [
+    "activeTab",
+    "scripting", 
+    "storage"
+  ],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*"
+      ],
       "js": ["contentScript.bundle.js"],
-      "css": ["content.styles.css"]
+      "run_at": "document_end"
     }
   ],
-  "devtools_page": "devtools.html",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ChatSeed - Save and Bridge ChatGPT Conversations"
+  },
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
   "web_accessible_resources": [
     {
-      "resources": ["content.styles.css", "icon-128.png", "icon-34.png"],
-      "matches": []
+      "resources": ["*.js", "*.css", "floating-button.png", "refresh-button.png"],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
     }
   ]
 }
