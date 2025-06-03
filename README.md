@@ -1,150 +1,230 @@
+# ChatSeed - Chrome Extension for ChatGPT Context Management
+
 <img src="src/assets/img/icon-128.png" width="64"/>
 
-# Chrome Extension (MV3) Boilerplate with React 18 and Webpack 5
+**ChatSeed** is a Chrome extension that enhances ChatGPT by enabling users to save conversation contexts and bridge them across different chat sessions. The extension operates entirely client-side, addressing the pain point of losing conversation context when starting new ChatGPT sessions.
 
-[![npm](https://img.shields.io/npm/v/chrome-extension-boilerplate-react)](https://www.npmjs.com/package/chrome-extension-boilerplate-react)
-[![npm-download](https://img.shields.io/npm/dw/chrome-extension-boilerplate-react)](https://www.npmjs.com/package/chrome-extension-boilerplate-react)
-[![npm](https://img.shields.io/npm/dm/chrome-extension-boilerplate-react)](https://www.npmjs.com/package/chrome-extension-boilerplate-react)
+## ✨ Features
 
-## Announcements
+### Core Functionality
+- 💾 **Save ChatGPT Contexts** - Extract and save conversation contexts with titles, tags, and metadata
+- 🔄 **Context Bridging** - Insert saved contexts into new ChatGPT conversations  
+- 🔍 **Advanced Search & Filtering** - Search by keyword, tag, or date across all saved contexts
+- 📊 **Smart Organization** - Sidebar navigation with All, Recent, Favorites, and Tags sections
+- 📁 **Individual Exports** - Export each context as individual .txt files
+- ⭐ **Favorites System** - Star important contexts for quick access
 
-- Recently updated from **[React](https://reactjs.org)** ~~17~~ to **18**!
-- **_This boilerplate adopts [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview/)!_**
-  - For V2 users, please check out the [manifest-v2](https://github.com/lxieyang/chrome-extension-boilerplate-react/tree/manifest-v2) branch, or use version [3.x](https://www.npmjs.com/package/chrome-extension-boilerplate-react/v/3.3.0).
-  - Check out the [Manifest V3 Migration Guide](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/).
-- Recently added [devtools](https://developer.chrome.com/docs/extensions/mv3/devtools/) Support! Thanks [GeekaholicLin](https://github.com/lxieyang/chrome-extension-boilerplate-react/issues/17)!
-- Recently updated from **[Webpack Dev Server](https://webpack.js.org/configuration/dev-server/)** ~~3.x~~ to **4.x** and **[Webpack](https://webpack.js.org/)** ~~4~~ to **5**!
-- Recently added [TypeScript](https://www.typescriptlang.org/) Support!
+### Summarization Tools
+- 🎯 **Quick Summary** - Main topics overview
+- 📋 **Detailed Summary** - Topics, action items, and things to remember  
+- 💼 **Business Summary** - Executive summary with key insights and action items
 
-## Features
+### Modern Interface
+- 🎨 **Clean Design** - Modern 800x600px popup with #176548 green accent
+- ⚡ **Responsive UI** - Fast hover effects and smooth transitions
+- 📱 **Intuitive Navigation** - Sidebar with context cards and action buttons
 
-This is a basic Chrome Extensions boilerplate to help you write modular and modern Javascript code, load CSS easily and [automatic reload the browser on code changes](https://webpack.github.io/docs/webpack-dev-server.html#automatic-refresh).
+## 🛠️ Technical Architecture
 
-This boilerplate is updated with:
+### Tech Stack
+- **Language**: TypeScript
+- **Build System**: Webpack 5  
+- **Storage**: Chrome Extension Storage API
+- **UI**: HTML/CSS (no framework dependencies)
+- **Target**: Manifest V3 Chrome Extension
 
-- [Chrome Extension Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview/)
-- [React 18](https://reactjs.org)
-- [Webpack 5](https://webpack.js.org/)
-- [Webpack Dev Server 4](https://webpack.js.org/configuration/dev-server/)
-- [React Refresh](https://www.npmjs.com/package/react-refresh)
-- [react-refresh-webpack-plugin](https://github.com/pmmmwh/react-refresh-webpack-plugin)
-- [eslint-config-react-app](https://www.npmjs.com/package/eslint-config-react-app)
-- [Prettier](https://prettier.io/)
-- [TypeScript](https://www.typescriptlang.org/)
-
-This boilerplate is heavily inspired by and adapted from [https://github.com/samuelsimoes/chrome-extension-webpack-boilerplate](https://github.com/samuelsimoes/chrome-extension-webpack-boilerplate), with additional support for React 18 features, Webpack 5, and Webpack Dev Server 4.
-
-Please open up an issue to nudge me to keep the npm packages up-to-date. FYI, it takes time to make different packages with different versions work together nicely.
-
-## Installing and Running
-
-### Procedures:
-
-1. Check if your [Node.js](https://nodejs.org/) version is >= **18**.
-2. Clone this repository.
-3. Change the package's `name`, `description`, and `repository` fields in `package.json`.
-4. Change the name of your extension on `src/manifest.json`.
-5. Run `npm install` to install the dependencies.
-6. Run `npm start`
-7. Load your extension on Chrome following:
-   1. Access `chrome://extensions/`
-   2. Check `Developer mode`
-   3. Click on `Load unpacked extension`
-   4. Select the `build` folder.
-8. Happy hacking.
-
-## Structure
-
-All your extension's code must be placed in the `src` folder.
-
-The boilerplate is already prepared to have a popup, an options page, a background page, and a new tab page (which replaces the new tab page of your browser). But feel free to customize these.
-
-## TypeScript
-
-This boilerplate now supports TypeScript! The `Options` Page is implemented using TypeScript. Please refer to `src/pages/Options/` for example usages.
-
-## Webpack auto-reload and HRM
-
-To make your workflow much more efficient this boilerplate uses the [webpack server](https://webpack.github.io/docs/webpack-dev-server.html) to development (started with `npm start`) with auto reload feature that reloads the browser automatically every time that you save some file in your editor.
-
-You can run the dev mode on other port if you want. Just specify the env var `port` like this:
-
+### File Structure
 ```
-$ PORT=6002 npm run start
+chatgpt-context-saver/
+├── src/
+│   ├── popup/           # Extension popup interface (800x600px)
+│   ├── content/         # ChatGPT page integration scripts
+│   ├── background/      # Background service worker
+│   ├── utils/          # Storage and message extraction utilities
+│   ├── types/          # TypeScript interfaces
+│   ├── assets/img/     # Extension icons and UI assets
+│   └── manifest.json   # Chrome extension manifest
+├── build/              # Webpack output
+└── [config files]     # Webpack, TypeScript, package.json
 ```
 
-## Content Scripts
+## 🚀 Installation & Development
 
-Although this boilerplate uses the webpack dev server, it's also prepared to write all your bundles files on the disk at every code change, so you can point, on your extension manifest, to your bundles that you want to use as [content scripts](https://developer.chrome.com/extensions/content_scripts), but you need to exclude these entry points from hot reloading [(why?)](https://github.com/samuelsimoes/chrome-extension-webpack-boilerplate/issues/4#issuecomment-261788690). To do so you need to expose which entry points are content scripts on the `webpack.config.js` using the `chromeExtensionBoilerplate -> notHotReload` config. Look the example below.
+### Prerequisites
+- **Node.js** version >= 18
+- **Chrome Browser** with Developer mode enabled
 
-Let's say that you want use the `myContentScript` entry point as content script, so on your `webpack.config.js` you will configure the entry point and exclude it from hot reloading, like this:
+### Setup Instructions
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/chatgpt-context-saver.git
+   cd chatgpt-context-saver
+   ```
 
-```js
-{
-  …
-  entry: {
-    myContentScript: "./src/js/myContentScript.js"
-  },
-  chromeExtensionBoilerplate: {
-    notHotReload: ["myContentScript"]
-  }
-  …
-}
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build the extension**
+   ```bash
+   npm run build
+   ```
+
+4. **Load in Chrome**
+   1. Open Chrome and go to `chrome://extensions/`
+   2. Enable "Developer mode" (top right toggle)
+   3. Click "Load unpacked"
+   4. Select the `build` folder from your project
+
+5. **Start developing**
+   ```bash
+   npm start
+   ```
+   This enables auto-reload during development.
+
+## 📝 Publishing to GitHub (Windows PC)
+
+### Initial Setup
+1. **Open Command Prompt or PowerShell**
+   ```cmd
+   cd path\to\chatgpt-context-saver
+   ```
+
+2. **Initialize Git (if not already done)**
+   ```cmd
+   git init
+   git remote add origin https://github.com/yourusername/chatgpt-context-saver.git
+   ```
+
+### Creating and Publishing to a Custom Branch
+
+#### Method 1: Create Branch Locally First
+```cmd
+# Create and switch to new branch
+git checkout -b feature/new-ui-updates
+
+# Add your changes
+git add .
+
+# Commit with descriptive message
+git commit -m "Add modern UI with enhanced features
+
+- Implement green banner design
+- Add individual context exports
+- Create collapsible filter system
+- Enhance summarization options
+- Improve hover effects and responsiveness"
+
+# Push to GitHub (creates remote branch)
+git push -u origin feature/new-ui-updates
 ```
 
-and on your `src/manifest.json`:
+#### Method 2: Push to Existing Branch
+```cmd
+# Switch to existing branch
+git checkout existing-branch-name
 
-```json
-{
-  "content_scripts": [
-    {
-      "matches": ["https://www.google.com/*"],
-      "js": ["myContentScript.bundle.js"]
-    }
-  ]
-}
+# Add and commit changes
+git add .
+git commit -m "Your commit message here"
+
+# Push changes
+git push origin existing-branch-name
 ```
 
-## Intelligent Code Completion
+### Useful Git Commands for Windows
+```cmd
+# Check current status
+git status
 
-Thanks to [@hudidit](https://github.com/lxieyang/chrome-extension-boilerplate-react/issues/4)'s kind suggestions, this boilerplate supports chrome-specific intelligent code completion using [@types/chrome](https://www.npmjs.com/package/@types/chrome).
+# See all branches
+git branch -a
 
-## Packing
+# Switch branches
+git checkout branch-name
 
-After the development of your extension run the command
+# Pull latest changes
+git pull origin main
 
-```
-$ NODE_ENV=production npm run build
-```
+# Merge branch to main
+git checkout main
+git merge feature/new-ui-updates
+git push origin main
 
-Now, the content of `build` folder will be the extension ready to be submitted to the Chrome Web Store. Just take a look at the [official guide](https://developer.chrome.com/webstore/publish) to more infos about publishing.
-
-## Secrets
-
-If you are developing an extension that talks with some API you probably are using different keys for testing and production. Is a good practice you not commit your secret keys and expose to anyone that have access to the repository.
-
-To this task this boilerplate import the file `./secrets.<THE-NODE_ENV>.js` on your modules through the module named as `secrets`, so you can do things like this:
-
-_./secrets.development.js_
-
-```js
-export default { key: '123' };
+# Delete branch after merging
+git branch -d feature/new-ui-updates
+git push origin --delete feature/new-ui-updates
 ```
 
-_./src/popup.js_
+### Creating Pull Requests
+1. Push your branch to GitHub using commands above
+2. Go to your GitHub repository in browser
+3. Click "Compare & pull request" 
+4. Add description and click "Create pull request"
 
-```js
-import secrets from 'secrets';
-ApiCall({ key: secrets.key });
+## 🔧 Development Commands
+
+```bash
+# Development with auto-reload
+npm start
+
+# Production build
+npm run build
+
+# TypeScript type checking
+npx tsc --noEmit
+
+# Lint code (if configured)
+npx eslint src/ --ext .ts,.js
 ```
 
-:point_right: The files with name `secrets.*.js` already are ignored on the repository.
+## 📖 Usage
 
-## Resources:
+1. **Saving Contexts**: Click the floating button on any ChatGPT page to save conversation context
+2. **Accessing Contexts**: Click the extension icon to open the 800x600px popup interface
+3. **Inserting Contexts**: Use the ⬇️ insert button on any saved context
+4. **Summarizing**: Use the ➕ plus menu for different summarization options
+5. **Organizing**: Use favorites ⭐, tags, and the filter system ⚙️
+6. **Exporting**: Use 📁 export buttons for individual or bulk .txt downloads
 
-- [Webpack documentation](https://webpack.js.org/concepts/)
-- [Chrome Extension documentation](https://developer.chrome.com/extensions/getstarted)
+## 🎯 Key Features in Detail
+
+### Context Management
+- **Smart Extraction**: Automatically parses ChatGPT conversations
+- **Rich Metadata**: Titles, tags, timestamps, and usage tracking
+- **Quick Access**: Recent contexts, favorites, and tag-based organization
+
+### Summarization Options
+- **Quick**: Concise main topics overview
+- **Detailed**: Comprehensive with action items and key points
+- **Business**: Executive-level with insights and to-do lists
+
+### Modern UI Design
+- **Banner Design**: #176548 green header with action buttons
+- **Sidebar Navigation**: All, Recent, Favorites, Tags sections  
+- **Context Cards**: Hover actions with insert, export, favorite, delete
+- **Filter System**: Collapsible keyword, tag, and date filters
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🔗 Resources
+
+- [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
+- [Manifest V3 Guide](https://developer.chrome.com/docs/extensions/mv3/intro/)
+- [Webpack Documentation](https://webpack.js.org/concepts/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 
 ---
 
-Michael Xieyang Liu | [Website](https://lxieyang.github.io)
+**ChatSeed** - Bridge your ChatGPT conversations across sessions with intelligent context management.
