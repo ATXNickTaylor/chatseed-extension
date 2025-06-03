@@ -1,5 +1,5 @@
 // src/utils/storage.ts
-import { ContextBlock } from '../types';
+import { ContextBlock, ContextStats } from '../types';
 
 // chrome.storage.local is Chrome's built-in storage API that persists data locally
 export const StorageKeys = {
@@ -69,6 +69,92 @@ export async function updateContextBlock(id: string, updates: Partial<ContextBlo
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
   } catch (error) {
     console.error('Failed to update context block:', error);
+    throw error;
+  }
+}
+
+export async function toggleFavorite(id: string): Promise<void> {
+  try {
+    const existing = await getContextBlocks();
+    const updated = existing.map(block => 
+      block.id === id ? { ...block, isFavorite: !block.isFavorite } : block
+    );
+    await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
+  } catch (error) {
+    console.error('Failed to toggle favorite:', error);
+    throw error;
+  }
+}
+
+export async function markAsUsed(id: string): Promise<void> {
+  try {
+    const existing = await getContextBlocks();
+    const updated = existing.map(block => 
+      block.id === id ? { ...block, lastUsed: Date.now() } : block
+    );
+    await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
+  } catch (error) {
+    console.error('Failed to mark as used:', error);
+    throw error;
+  }
+}
+
+export async function getContextStats(): Promise<ContextStats> {
+  try {
+    const contexts = await getContextBlocks();
+    const now = Date.now();
+    const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
+    
+    const allTags = contexts.flatMap(context => context.tags);
+    const uniqueTags = Array.from(new Set(allTags));
+    
+    return {
+      total: contexts.length,
+      recent: contexts.filter(context => context.dateSaved > oneWeekAgo).length,
+      favorites: contexts.filter(context => context.isFavorite).length,
+      tags: uniqueTags
+    };
+  } catch (error) {
+    console.error('Failed to get context stats:', error);
+    return { total: 0, recent: 0, favorites: 0, tags: [] };
+  }
+}
+
+export async function getRecentContexts(limit: number = 10): Promise<ContextBlock[]> {
+  try {
+    const contexts = await getContextBlocks();
+    return contexts
+      .sort((a, b) => (b.lastUsed || b.dateSaved) - (a.lastUsed || a.dateSaved))
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Failed to get recent contexts:', error);
+    return [];
+  }
+}
+
+export async function getFavoriteContexts(): Promise<ContextBlock[]> {
+  try {
+    const contexts = await getContextBlocks();
+    return contexts
+      .filter(context => context.isFavorite)
+      .sort((a, b) => b.dateSaved - a.dateSaved);
+  } catch (error) {
+    console.error('Failed to get favorite contexts:', error);
+    return [];
+  }
+}
+
+export async function exportAllContexts(): Promise<string> {
+  try {
+    const contexts = await getContextBlocks();
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      version: '1.0',
+      contexts: contexts
+    };
+    return JSON.stringify(exportData, null, 2);
+  } catch (error) {
+    console.error('Failed to export all contexts:', error);
     throw error;
   }
 }

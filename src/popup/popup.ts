@@ -1,17 +1,44 @@
 // src/popup/popup.ts
-import { getContextBlocks, deleteContextBlock } from '../utils/storage';
-import { ContextBlock } from '../types';
+import './styles.css';
+import { 
+  getContextBlocks, 
+  deleteContextBlock, 
+  toggleFavorite, 
+  markAsUsed, 
+  getContextStats,
+  getRecentContexts,
+  getFavoriteContexts,
+  exportAllContexts 
+} from '../utils/storage';
+import { ContextBlock, NavigationState } from '../types';
 
 let allContexts: ContextBlock[] = [];
 let filteredContexts: ContextBlock[] = [];
-let activeTagFilter: string | null = null;
-let activeFilter: { type: string; value: string } | null = null;
-let isFilterPanelOpen: boolean = false;
+let navigationState: NavigationState = {
+  activeSection: 'all',
+  searchQuery: '',
+  tagFilter: null
+};
+
+interface FilterState {
+  keyword: string;
+  tag: string;
+  date: string;
+  isVisible: boolean;
+}
+
+let filterState: FilterState = {
+  keyword: '',
+  tag: '',
+  date: '',
+  isVisible: false
+};
 
 // Initialize popup when DOM loads
 document.addEventListener('DOMContentLoaded', async () => {
   await loadContexts();
   setupEventListeners();
+  updateStats();
 });
 
 async function loadContexts(): Promise<void> {
@@ -23,12 +50,10 @@ async function loadContexts(): Promise<void> {
     
     // Sort contexts in descending order (most recent first)
     allContexts.sort((a, b) => b.dateSaved - a.dateSaved);
-    filteredContexts = [...allContexts];
     
     console.log('📚 Contexts after sorting:', allContexts);
-    console.log('📚 Filtered contexts:', filteredContexts);
     
-    renderContexts();
+    applyCurrentFilters();
   } catch (error) {
     console.error('📚 Failed to load contexts:', error);
     showError('Failed to load contexts');
@@ -36,84 +61,162 @@ async function loadContexts(): Promise<void> {
 }
 
 function setupEventListeners(): void {
+  // Search functionality
   const searchInput = document.getElementById('search-input') as HTMLInputElement;
-  const refreshBtn = document.getElementById('refresh-btn') as HTMLElement;
-  const summarizeBtn = document.getElementById('summarize-btn') as HTMLButtonElement;
-  const filterToggleBtn = document.getElementById('filter-toggle-btn') as HTMLButtonElement;
-  const filterContainer = document.getElementById('filter-container') as HTMLElement;
-  const filterType = document.getElementById('filter-type') as HTMLSelectElement;
-  const filterInput = document.getElementById('filter-input') as HTMLInputElement;
-  const filterInputContainer = document.getElementById('filter-input-container') as HTMLElement;
-  const clearFilterBtn = document.getElementById('clear-filter-btn') as HTMLButtonElement;
-  const removeFilterBtn = document.getElementById('remove-filter-btn') as HTMLButtonElement;
-
   searchInput?.addEventListener('input', handleSearch);
-  
-  refreshBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    loadContexts();
+
+  // Banner action buttons
+  const exportAllBtn = document.getElementById('export-all-btn');
+  const filterToggleBtn = document.getElementById('filter-toggle-btn');
+
+  exportAllBtn?.addEventListener('click', handleExportAllIndividual);
+  filterToggleBtn?.addEventListener('click', toggleFilterSection);
+
+  // Filter inputs
+  const filterKeyword = document.getElementById('filter-keyword') as HTMLInputElement;
+  const filterTag = document.getElementById('filter-tag') as HTMLInputElement;
+  const filterDate = document.getElementById('filter-date') as HTMLSelectElement;
+
+  filterKeyword?.addEventListener('input', handleFilterChange);
+  filterTag?.addEventListener('input', handleFilterChange);
+  filterDate?.addEventListener('change', handleFilterChange);
+
+  // Plus button and menus
+  const plusBtn = document.getElementById('plus-btn');
+  const summarizeCurrentBtn = document.getElementById('summarize-current-btn');
+
+  plusBtn?.addEventListener('click', togglePlusMenu);
+  summarizeCurrentBtn?.addEventListener('click', showSummarizeMenu);
+
+  // Summarize menu items
+  document.querySelectorAll('[data-summary-type]').forEach(item => {
+    item.addEventListener('click', handleSummarizeOption);
   });
 
-  summarizeBtn?.addEventListener('click', () => {
-    handleSummarizeChat();
+  // Navigation items
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', handleNavigation);
   });
 
-  filterToggleBtn?.addEventListener('click', () => {
-    toggleFilterPanel();
-  });
-
-  filterType?.addEventListener('change', (e) => {
-    const value = (e.target as HTMLSelectElement).value;
-    if (value === 'all') {
-      filterInputContainer.style.display = 'none';
-      clearFilters();
-    } else {
-      filterInputContainer.style.display = 'block';
-      filterInput.placeholder = getFilterPlaceholder(value);
-      filterInput.focus();
-    }
-  });
-
-  filterInput?.addEventListener('input', (e) => {
-    const filterValue = (e.target as HTMLInputElement).value;
-    const filterType = (document.getElementById('filter-type') as HTMLSelectElement).value;
-    applyFilter(filterType, filterValue);
-  });
-
-  clearFilterBtn?.addEventListener('click', () => {
-    clearFilters();
-  });
-
-  removeFilterBtn?.addEventListener('click', () => {
-    clearFilters();
-  });
+  // Close menus when clicking outside
+  document.addEventListener('click', handleOutsideClick);
 }
 
-async function handleSummarizeChat(): Promise<void> {
-  console.log('Summarize chat button clicked');
+function handleNavigation(e: Event): void {
+  const target = e.currentTarget as HTMLElement;
+  const navType = target.getAttribute('data-nav') as NavigationState['activeSection'];
   
+  if (!navType) return;
+
+  // Update active nav item
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  target.classList.add('active');
+
+  // Update navigation state
+  navigationState.activeSection = navType;
+  navigationState.tagFilter = null; // Clear tag filter when switching sections
+
+  applyCurrentFilters();
+}
+
+function handleSearch(e: Event): void {
+  const searchTerm = (e.target as HTMLInputElement).value;
+  navigationState.searchQuery = searchTerm;
+  applyCurrentFilters();
+}
+
+function toggleFilterSection(): void {
+  const filterSection = document.getElementById('filter-section');
+  if (!filterSection) return;
+
+  filterState.isVisible = !filterState.isVisible;
+  filterSection.style.display = filterState.isVisible ? 'block' : 'none';
+}
+
+function handleFilterChange(): void {
+  const keywordInput = document.getElementById('filter-keyword') as HTMLInputElement;
+  const tagInput = document.getElementById('filter-tag') as HTMLInputElement;
+  const dateSelect = document.getElementById('filter-date') as HTMLSelectElement;
+
+  filterState.keyword = keywordInput?.value || '';
+  filterState.tag = tagInput?.value || '';
+  filterState.date = dateSelect?.value || '';
+
+  applyCurrentFilters();
+}
+
+function togglePlusMenu(e: Event): void {
+  e.stopPropagation();
+  const plusMenu = document.getElementById('plus-menu');
+  const summarizeMenu = document.getElementById('summarize-menu');
+  
+  if (!plusMenu) return;
+
+  // Hide summarize menu if open
+  if (summarizeMenu) {
+    summarizeMenu.style.display = 'none';
+  }
+
+  // Toggle plus menu
+  const isVisible = plusMenu.style.display === 'block';
+  plusMenu.style.display = isVisible ? 'none' : 'block';
+}
+
+function showSummarizeMenu(e: Event): void {
+  e.stopPropagation();
+  const plusMenu = document.getElementById('plus-menu');
+  const summarizeMenu = document.getElementById('summarize-menu');
+  
+  if (!summarizeMenu) return;
+
+  // Hide plus menu
+  if (plusMenu) {
+    plusMenu.style.display = 'none';
+  }
+
+  // Show summarize menu
+  summarizeMenu.style.display = 'block';
+}
+
+function handleOutsideClick(e: Event): void {
+  const target = e.target as HTMLElement;
+  const plusBtn = document.getElementById('plus-btn');
+  const plusMenu = document.getElementById('plus-menu');
+  const summarizeMenu = document.getElementById('summarize-menu');
+
+  // Check if click is outside menus and plus button
+  if (!target.closest('#plus-btn') && !target.closest('#plus-menu') && !target.closest('#summarize-menu')) {
+    if (plusMenu) plusMenu.style.display = 'none';
+    if (summarizeMenu) summarizeMenu.style.display = 'none';
+  }
+}
+
+async function handleSummarizeOption(e: Event): Promise<void> {
+  const target = e.target as HTMLElement;
+  const summaryType = target.getAttribute('data-summary-type');
+  
+  if (!summaryType) return;
+
   try {
-    // Send message to content script to insert summarize prompt
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.id) {
-      console.log('Sending SUMMARIZE_CHAT message to tab:', tab.id);
       const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'SUMMARIZE_CHAT'
+        action: 'SUMMARIZE_CHAT',
+        summaryType: summaryType
       });
       
-      console.log('Summarize response:', response);
-      
       if (response && response.success) {
-        console.log('Summarize prompt inserted successfully, closing popup');
-        // Close popup after successful insertion
+        // Hide menus
+        const plusMenu = document.getElementById('plus-menu');
+        const summarizeMenu = document.getElementById('summarize-menu');
+        if (plusMenu) plusMenu.style.display = 'none';
+        if (summarizeMenu) summarizeMenu.style.display = 'none';
+        
         window.close();
       } else {
-        console.error('Summarize failed:', response);
         alert('Failed to insert summarize prompt. Make sure you are on a ChatGPT page.');
       }
-    } else {
-      console.error('No active tab found');
-      alert('No active tab found. Make sure you are on a ChatGPT page.');
     }
   } catch (error) {
     console.error('Failed to insert summarize prompt:', error);
@@ -121,164 +224,117 @@ async function handleSummarizeChat(): Promise<void> {
   }
 }
 
-function toggleFilterPanel(): void {
-  const filterContainer = document.getElementById('filter-container') as HTMLElement;
-  const filterToggleBtn = document.getElementById('filter-toggle-btn') as HTMLButtonElement;
-  
-  isFilterPanelOpen = !isFilterPanelOpen;
-  
-  if (isFilterPanelOpen) {
-    filterContainer.classList.add('show');
-    filterToggleBtn.textContent = '🔍 Hide Filter';
-  } else {
-    filterContainer.classList.remove('show');
-    filterToggleBtn.textContent = '🔍 Filter';
-    // Clear filters when closing panel
-    clearFilters();
-  }
-}
+function applyCurrentFilters(): void {
+  let filtered = [...allContexts];
 
-function getFilterPlaceholder(filterType: string): string {
-  switch (filterType) {
-    case 'keyword': return 'Enter keyword to search...';
-    case 'tag': return 'Enter tag name...';
-    case 'date': return 'Enter date (YYYY-MM-DD)...';
-    default: return 'Enter filter value...';
-  }
-}
-
-function applyFilter(filterType: string, filterValue: string): void {
-  if (!filterValue.trim()) {
-    activeFilter = null;
-    filteredContexts = [...allContexts];
-    updateFilterIndicator();
-    renderContexts();
-    return;
+  // Apply section filter
+  switch (navigationState.activeSection) {
+    case 'recent':
+      const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(context => context.dateSaved > oneWeekAgo);
+      break;
+    case 'favorites':
+      filtered = filtered.filter(context => context.isFavorite);
+      break;
+    case 'tags':
+      // For tags view, group by tags or show all if no specific tag filter
+      if (navigationState.tagFilter) {
+        filtered = filtered.filter(context => 
+          context.tags.some(tag => tag.toLowerCase().includes(navigationState.tagFilter!.toLowerCase()))
+        );
+      }
+      break;
+    case 'all':
+    default:
+      // No additional filtering for 'all'
+      break;
   }
 
-  const searchTerm = filterValue.toLowerCase().trim();
-  activeFilter = { type: filterType, value: filterValue };
-
-  filteredContexts = allContexts.filter(context => {
-    switch (filterType) {
-      case 'keyword':
-        return context.title.toLowerCase().includes(searchTerm) ||
-               context.body.toLowerCase().includes(searchTerm);
-      case 'tag':
-        return context.tags.some(tag => tag.toLowerCase().includes(searchTerm));
-      case 'date':
-        const contextDate = new Date(context.dateSaved).toISOString().split('T')[0];
-        return contextDate.includes(searchTerm);
-      default:
-        return true;
-    }
-  });
-
-  updateFilterIndicator();
-  renderContexts();
-}
-
-function updateFilterIndicator(): void {
-  const indicator = document.getElementById('active-filter-indicator') as HTMLElement;
-  const description = document.getElementById('filter-description') as HTMLElement;
-  
-  if (activeFilter || activeTagFilter) {
-    indicator.style.display = 'flex';
-    if (activeTagFilter) {
-      description.textContent = `Filtered by tag: "${activeTagFilter}"`;
-    } else if (activeFilter) {
-      description.textContent = `Filtered by ${activeFilter.type}: "${activeFilter.value}"`;
-    }
-  } else {
-    indicator.style.display = 'none';
-  }
-}
-
-function clearFilters(): void {
-  activeTagFilter = null;
-  activeFilter = null;
-  filteredContexts = [...allContexts];
-  
-  // Reset all filter inputs
-  const filterInput = document.getElementById('filter-input') as HTMLInputElement;
-  const searchInput = document.getElementById('search-input') as HTMLInputElement;
-  const filterType = document.getElementById('filter-type') as HTMLSelectElement;
-  const filterInputContainer = document.getElementById('filter-input-container') as HTMLElement;
-  
-  if (filterInput) filterInput.value = '';
-  if (searchInput) searchInput.value = '';
-  if (filterType) filterType.value = 'all';
-  if (filterInputContainer) filterInputContainer.style.display = 'none';
-  
-  updateFilterIndicator();
-  renderContexts();
-}
-
-function handleSearch(e: Event): void {
-  const searchTerm = (e.target as HTMLInputElement).value.toLowerCase().trim();
-  
-  if (!searchTerm) {
-    filteredContexts = [...allContexts];
-  } else {
-    filteredContexts = allContexts.filter(context =>
+  // Apply search filter
+  if (navigationState.searchQuery.trim()) {
+    const searchTerm = navigationState.searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(context =>
       context.title.toLowerCase().includes(searchTerm) ||
       context.body.toLowerCase().includes(searchTerm) ||
-      context.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm))
+      context.tags.some(tag => tag.toLowerCase().includes(searchTerm))
     );
   }
+
+  // Apply additional filters
+  if (filterState.keyword.trim()) {
+    const keyword = filterState.keyword.toLowerCase().trim();
+    filtered = filtered.filter(context =>
+      context.title.toLowerCase().includes(keyword) ||
+      context.body.toLowerCase().includes(keyword) ||
+      context.tags.some(tag => tag.toLowerCase().includes(keyword))
+    );
+  }
+
+  if (filterState.tag.trim()) {
+    const tag = filterState.tag.toLowerCase().trim();
+    filtered = filtered.filter(context =>
+      context.tags.some(contextTag => contextTag.toLowerCase().includes(tag))
+    );
+  }
+
+  if (filterState.date) {
+    const now = Date.now();
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+    const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = now - (30 * 24 * 60 * 60 * 1000);
+
+    switch (filterState.date) {
+      case 'today':
+        filtered = filtered.filter(context => context.dateSaved > oneDayAgo);
+        break;
+      case 'week':
+        filtered = filtered.filter(context => context.dateSaved > oneWeekAgo);
+        break;
+      case 'month':
+        filtered = filtered.filter(context => context.dateSaved > oneMonthAgo);
+        break;
+      case 'older':
+        filtered = filtered.filter(context => context.dateSaved <= oneMonthAgo);
+        break;
+    }
+  }
+
+  filteredContexts = filtered;
   renderContexts();
 }
 
-function handleTagClick(tagName: string): void {
-  // Open filter panel if not already open
-  if (!isFilterPanelOpen) {
-    toggleFilterPanel();
+async function updateStats(): Promise<void> {
+  try {
+    const stats = await getContextStats();
+    const statsCount = document.getElementById('stats-count');
+    const statsTitle = document.getElementById('stats-title');
+    
+    if (statsCount) statsCount.textContent = stats.total.toString();
+    if (statsTitle) {
+      statsTitle.textContent = `You have ${stats.total} saved context${stats.total !== 1 ? 's' : ''}`;
+    }
+  } catch (error) {
+    console.error('Failed to update stats:', error);
   }
-  
-  // Clear other filters first
-  clearFilters();
-  
-  // Set up tag filter
-  const filterType = document.getElementById('filter-type') as HTMLSelectElement;
-  const filterInput = document.getElementById('filter-input') as HTMLInputElement;
-  const filterInputContainer = document.getElementById('filter-input-container') as HTMLElement;
-  
-  filterType.value = 'tag';
-  filterInput.value = tagName;
-  filterInputContainer.style.display = 'block';
-  
-  activeTagFilter = tagName;
-  activeFilter = { type: 'tag', value: tagName };
-  
-  filteredContexts = allContexts.filter(context =>
-    context.tags.some(tag => tag.toLowerCase() === tagName.toLowerCase())
-  );
-  
-  updateFilterIndicator();
-  renderContexts();
 }
 
 function renderContexts(): void {
   console.log('📚 Starting renderContexts...');
   console.log('📚 filteredContexts.length:', filteredContexts.length);
   
-  const contextList = document.getElementById('context-list');
-  if (!contextList) {
-    console.error('📚 Context list element not found!');
+  const contextsGrid = document.getElementById('contexts-grid');
+  if (!contextsGrid) {
+    console.error('📚 Contexts grid element not found!');
     return;
   }
 
   if (filteredContexts.length === 0) {
     console.log('📚 No contexts to display, showing empty state');
-    contextList.innerHTML = `
+    const emptyMessage = getEmptyStateMessage();
+    contextsGrid.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">📝</div>
-        <div>No saved contexts found</div>
-        <div style="font-size: 14px; margin-top: 8px;">
-          ${activeTagFilter || activeFilter ? 
-            'No contexts match your current filter. Try clearing the filter or searching for something else.' : 
-            'Visit ChatGPT and click the floating save button to create your first context!'}
-        </div>
+        <div class="empty-icon">📝</div>
+        <div>${emptyMessage}</div>
       </div>
     `;
     return;
@@ -286,40 +342,29 @@ function renderContexts(): void {
 
   console.log('📚 Rendering', filteredContexts.length, 'contexts');
 
-  contextList.innerHTML = filteredContexts.map((context, index) => {
+  contextsGrid.innerHTML = filteredContexts.map(context => {
     console.log('📚 Rendering context:', context.title, 'ID:', context.id);
     
-    const isFirstContext = index === 0 && filteredContexts.length === allContexts.length;
-    const recentIndicator = isFirstContext 
-      ? '<div class="recent-indicator">This is your most recently saved context.</div>'
-      : '';
-
     return `
-      <div class="context-item ${isFirstContext ? 'most-recent' : ''}" data-context-id="${context.id}">
-        <div class="context-title">${escapeHtml(context.title)}</div>
-        <div class="context-preview">${escapeHtml(truncateText(context.body, 150))}</div>
-        <div class="context-meta">
-          <div class="context-tags">
-            ${context.tags.map((tag: string) => 
-              `<span class="tag ${activeTagFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
-            ).join('')}
+      <div class="context-card" data-context-id="${context.id}">
+        <div class="context-header">
+          <div>
+            <div class="context-title">${escapeHtml(context.title)}</div>
+            <div class="context-date">${formatDate(context.dateSaved)}</div>
           </div>
-          <div>${formatDate(context.dateSaved)}</div>
+          <div class="context-actions">
+            <button class="action-btn insert-btn" data-context-id="${context.id}" title="Insert Context">⬇️</button>
+            <button class="action-btn export-context-btn" data-context-id="${context.id}" title="Export Context">📁</button>
+            <button class="action-btn edit-btn" data-context-id="${context.id}" title="Edit">📝</button>
+            <button class="action-btn favorite-btn ${context.isFavorite ? 'favorited' : ''}" data-context-id="${context.id}" title="Favorite">⭐</button>
+            <button class="action-btn delete-btn" data-context-id="${context.id}" title="Delete">🗑️</button>
+          </div>
         </div>
-        ${recentIndicator}
-        <div class="context-actions">
-          <button class="btn btn-primary insert-btn" data-context-id="${context.id}">
-            📋 Insert
-          </button>
-          <button class="btn btn-secondary view-btn" data-context-id="${context.id}">
-            👁️ View
-          </button>
-          <button class="btn btn-success export-btn" data-context-id="${context.id}">
-            📥 Export
-          </button>
-          <button class="btn btn-danger delete-btn" data-context-id="${context.id}">
-            🗑️ Delete
-          </button>
+        <div class="context-preview">${escapeHtml(truncateText(context.body, 150))}</div>
+        <div class="context-tags">
+          ${context.tags.map(tag => 
+            `<span class="tag ${navigationState.tagFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
+          ).join('')}
         </div>
       </div>
     `;
@@ -327,157 +372,100 @@ function renderContexts(): void {
 
   console.log('📚 Context HTML generated, setting up listeners...');
 
-  // Add event listeners for buttons and tags
-  setupContextButtonListeners();
-  setupTagClickListeners();
+  // Add event listeners for context cards and actions
+  setupContextEventListeners();
   
   console.log('📚 renderContexts complete');
 }
 
-function setupTagClickListeners(): void {
+function getEmptyStateMessage(): string {
+  switch (navigationState.activeSection) {
+    case 'recent':
+      return 'No recent contexts found. Recent contexts are from the last 7 days.';
+    case 'favorites':
+      return 'No favorite contexts yet. Star contexts to add them to your favorites.';
+    case 'tags':
+      return navigationState.tagFilter 
+        ? `No contexts found with tag "${navigationState.tagFilter}"`
+        : 'Browse contexts by tags. Click on any tag to filter.';
+    default:
+      return navigationState.searchQuery
+        ? 'No contexts match your search. Try different keywords.'
+        : 'No saved contexts found. Visit ChatGPT and save your first context!';
+  }
+}
+
+function setupContextEventListeners(): void {
+  // Context card clicks (for viewing)
+  document.querySelectorAll('.context-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Don't trigger on action button clicks
+      if ((e.target as HTMLElement).closest('.action-btn')) return;
+      
+      const contextId = card.getAttribute('data-context-id');
+      if (contextId) viewContext(contextId);
+    });
+  });
+
+  // Action buttons
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation(); // Prevent card click
+      const contextId = btn.getAttribute('data-context-id');
+      if (!contextId) return;
+
+      if (btn.classList.contains('insert-btn')) {
+        await insertContext(contextId);
+      } else if (btn.classList.contains('export-context-btn')) {
+        await handleExportContext(contextId);
+      } else if (btn.classList.contains('edit-btn')) {
+        await insertContext(contextId); // For now, edit means insert
+      } else if (btn.classList.contains('favorite-btn')) {
+        await handleToggleFavorite(contextId);
+      } else if (btn.classList.contains('delete-btn')) {
+        await handleDeleteContext(contextId);
+      }
+    });
+  });
+
+  // Tag clicks
   document.querySelectorAll('.tag').forEach(tag => {
     tag.addEventListener('click', (e) => {
       e.stopPropagation();
-      const tagName = (e.target as HTMLElement).getAttribute('data-tag');
-      if (tagName) {
-        handleTagClick(tagName);
-      }
+      const tagName = tag.getAttribute('data-tag');
+      if (tagName) handleTagFilter(tagName);
     });
   });
 }
 
-function setupContextButtonListeners(): void {
-  console.log('Setting up context button listeners');
-  
-  // Insert buttons
-  document.querySelectorAll('.insert-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const contextId = (e.target as HTMLElement).getAttribute('data-context-id');
-      console.log('Insert button clicked for context:', contextId);
-      if (contextId) {
-        await insertContext(contextId);
-      }
-    });
-  });
-
-  // View buttons
-  document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const contextId = (e.target as HTMLElement).getAttribute('data-context-id');
-      console.log('View button clicked for context:', contextId);
-      if (contextId) {
-        viewContext(contextId);
-      }
-    });
-  });
-
-  // Export buttons
-  document.querySelectorAll('.export-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const contextId = (e.target as HTMLElement).getAttribute('data-context-id');
-      console.log('Export button clicked for context:', contextId);
-      if (contextId) {
-        exportContext(contextId);
-      }
-    });
-  });
-
-  // Delete buttons
-  document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const contextId = (e.target as HTMLElement).getAttribute('data-context-id');
-      console.log('Delete button clicked for context:', contextId);
-      if (contextId) {
-        await deleteContext(contextId);
-      }
-    });
-  });
-}
-
-async function insertContext(contextId: string): Promise<void> {
-  const context = allContexts.find(c => c.id === contextId);
-  if (!context) {
-    console.error('Context not found:', contextId);
-    return;
+function handleTagFilter(tagName: string): void {
+  // Switch to tags view if not already there
+  if (navigationState.activeSection !== 'tags') {
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelector('[data-nav="tags"]')?.classList.add('active');
+    navigationState.activeSection = 'tags';
   }
 
-  console.log('Attempting to insert context:', context.title);
+  // Toggle tag filter
+  navigationState.tagFilter = navigationState.tagFilter === tagName ? null : tagName;
+  applyCurrentFilters();
+}
+
+async function handleExportContext(contextId: string): Promise<void> {
+  const context = allContexts.find(c => c.id === contextId);
+  if (!context) return;
 
   try {
-    // Send message to content script to insert context
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab.id) {
-      console.log('Sending INSERT_CONTEXT message to tab:', tab.id);
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'INSERT_CONTEXT',
-        context: context
-      });
-      
-      console.log('Insert response:', response);
-      
-      if (response && response.success) {
-        console.log('Context inserted successfully, closing popup');
-        // Close popup after successful insertion
-        window.close();
-      } else {
-        console.error('Insert failed:', response);
-        alert('Failed to insert context. Make sure you are on a ChatGPT page.');
-      }
-    } else {
-      console.error('No active tab found');
-      alert('No active tab found. Make sure you are on a ChatGPT page.');
-    }
-  } catch (error) {
-    console.error('Failed to insert context:', error);
-    alert('Failed to insert context. Make sure you are on a ChatGPT page and try again.');
-  }
-}
-
-function exportContext(contextId: string): void {
-  const context = allContexts.find(c => c.id === contextId);
-  if (!context) {
-    console.error('Context not found:', contextId);
-    return;
-  }
-
-  console.log('Exporting context:', context.title);
-
-  try {
-    // Create human-readable text content
-    const exportContent = `CHAT SEED EXPORT
-==================
-
-Title: ${context.title}
-Date Saved: ${formatDate(context.dateSaved)}
-Tags: ${context.tags.length > 0 ? context.tags.join(', ') : 'None'}
-
-Content:
---------
-${context.body}
-
-==================
-Exported from Chat Seeds Extension
-${new Date().toLocaleString()}`;
-
-    // Create a safe filename from the title
-    const safeTitle = context.title
-      .replace(/[^a-z0-9]/gi, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '')
-      .substring(0, 50);
+    const content = `Title: ${context.title}\nDate Saved: ${new Date(context.dateSaved).toLocaleString()}\nTags: ${context.tags.join(', ')}\n\n${context.body}`;
     
-    const filename = `chat-seed-${safeTitle}.txt`;
-
-    // Create blob and download
-    const blob = new Blob([exportContent], { type: 'text/plain' });
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    
+    // Sanitize filename
+    const sanitizedTitle = context.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    a.download = `chatseed_${sanitizedTitle}_${context.id.substring(0, 8)}.txt`;
     a.style.display = 'none';
     
     document.body.appendChild(a);
@@ -486,24 +474,108 @@ ${new Date().toLocaleString()}`;
     
     URL.revokeObjectURL(url);
     
-    console.log(`Successfully exported context "${context.title}" to ${filename}`);
-    
+    console.log(`Successfully exported context "${context.title}" as .txt file`);
   } catch (error) {
     console.error('Failed to export context:', error);
     alert('Failed to export context. Please try again.');
   }
 }
 
+async function handleExportAllIndividual(): Promise<void> {
+  try {
+    if (allContexts.length === 0) {
+      alert('No contexts to export.');
+      return;
+    }
+
+    // Create individual .txt files for each context
+    for (const context of allContexts) {
+      const content = `Title: ${context.title}\nDate Saved: ${new Date(context.dateSaved).toLocaleString()}\nTags: ${context.tags.join(', ')}\n\n${context.body}`;
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Sanitize filename
+      const sanitizedTitle = context.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      a.download = `chatseed_${sanitizedTitle}_${context.id.substring(0, 8)}.txt`;
+      a.style.display = 'none';
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(url);
+      
+      // Small delay between downloads to avoid browser blocking
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    console.log(`Successfully exported ${allContexts.length} contexts as individual .txt files`);
+  } catch (error) {
+    console.error('Failed to export contexts:', error);
+    alert('Failed to export contexts. Please try again.');
+  }
+}
+
+async function insertContext(contextId: string): Promise<void> {
+  const context = allContexts.find(c => c.id === contextId);
+  if (!context) return;
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab.id) {
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: 'INSERT_CONTEXT',
+        context: context
+      });
+      
+      if (response && response.success) {
+        await markAsUsed(contextId);
+        window.close();
+      } else {
+        alert('Failed to insert context. Make sure you are on a ChatGPT page.');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to insert context:', error);
+    alert('Failed to insert context. Please try again.');
+  }
+}
+
+async function handleToggleFavorite(contextId: string): Promise<void> {
+  try {
+    await toggleFavorite(contextId);
+    await loadContexts(); // Refresh to show updated state
+    await updateStats();
+  } catch (error) {
+    console.error('Failed to toggle favorite:', error);
+    alert('Failed to update favorite status. Please try again.');
+  }
+}
+
+async function handleDeleteContext(contextId: string): Promise<void> {
+  const context = allContexts.find(c => c.id === contextId);
+  if (!context) return;
+
+  if (confirm(`Are you sure you want to delete "${context.title}"?`)) {
+    try {
+      await deleteContextBlock(contextId);
+      await loadContexts();
+      await updateStats();
+    } catch (error) {
+      console.error('Failed to delete context:', error);
+      alert('Failed to delete context. Please try again.');
+    }
+  }
+}
+
 function viewContext(contextId: string): void {
   const context = allContexts.find(c => c.id === contextId);
-  if (!context) {
-    console.error('Context not found:', contextId);
-    return;
-  }
+  if (!context) return;
 
-  console.log('Viewing context:', context.title);
-
-  // Create a simple view modal
+  // Create a view modal
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -544,48 +616,19 @@ function viewContext(contextId: string): void {
         ${escapeHtml(context.body)}
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        ${context.tags.map((tag: string) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+        ${context.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
   
-  // Add close button listener
   const closeBtn = modal.querySelector('#close-view-modal');
-  closeBtn?.addEventListener('click', () => {
-    console.log('Closing view modal');
-    modal.remove();
-  });
+  closeBtn?.addEventListener('click', () => modal.remove());
   
-  // Click outside to close
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      console.log('Clicking outside modal to close');
-      modal.remove();
-    }
+    if (e.target === modal) modal.remove();
   });
-}
-
-async function deleteContext(contextId: string): Promise<void> {
-  const context = allContexts.find(c => c.id === contextId);
-  if (!context) {
-    console.error('Context not found:', contextId);
-    return;
-  }
-
-  console.log('Attempting to delete context:', context.title);
-
-  if (confirm(`Are you sure you want to delete "${context.title}"?`)) {
-    try {
-      await deleteContextBlock(contextId);
-      await loadContexts(); // Refresh the list
-      console.log('Context deleted successfully');
-    } catch (error) {
-      console.error('Failed to delete context:', error);
-      alert('Failed to delete context. Please try again.');
-    }
-  }
 }
 
 // Utility functions
@@ -602,15 +645,27 @@ function truncateText(text: string, maxLength: number): string {
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) {
+    return 'Today';
+  } else if (diffDays === 2) {
+    return 'Yesterday';
+  } else if (diffDays < 7) {
+    return `${diffDays - 1} days ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
 }
 
 function showError(message: string): void {
-  const contextList = document.getElementById('context-list');
-  if (contextList) {
-    contextList.innerHTML = `
+  const contextsGrid = document.getElementById('contexts-grid');
+  if (contextsGrid) {
+    contextsGrid.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
+        <div class="empty-icon">⚠️</div>
         <div>${message}</div>
       </div>
     `;

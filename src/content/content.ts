@@ -180,11 +180,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   if (message.action === 'SUMMARIZE_CHAT') {
     try {
-      const result = insertSummarizePrompt();
+      const result = insertSummarizePrompt(message.summaryType || 'quick');
       console.log('Insert summarize prompt result:', result);
       sendResponse({ success: true });
     } catch (error) {
       console.error('Error inserting summarize prompt:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      sendResponse({ success: false, error: errorMessage });
+    }
+  }
+
+  if (message.action === 'SUMMARIZE_CONTEXT') {
+    try {
+      const result = insertContextSummaryPrompt(message.context);
+      console.log('Insert context summary result:', result);
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error inserting context summary:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      sendResponse({ success: false, error: errorMessage });
+    }
+  }
+
+  if (message.action === 'OPEN_SAVE_MODAL') {
+    try {
+      openSaveModal();
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error opening save modal:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       sendResponse({ success: false, error: errorMessage });
     }
@@ -292,8 +315,24 @@ ${context.body}`;
   }
 }
 
-function insertSummarizePrompt(): boolean {
-  console.log('Attempting to insert summarize prompt');
+function getSummarizePrompt(summaryType: string): string {
+  switch (summaryType) {
+    case 'quick':
+      return 'Without addressing me directly, summarize our conversation above focusing only on the main topics discussed. Keep it concise and organized.';
+    
+    case 'detailed':
+      return 'Without addressing me directly, provide a detailed summary of our conversation above including: 1) Main topics discussed, 2) Action items mentioned, 3) Important things to remember. Present this in a well-organized format.';
+    
+    case 'business':
+      return 'Without addressing me directly, create a comprehensive business summary of our conversation above with the following sections: 1) Executive Summary, 2) Key Insights, 3) Action Items, 4) To-Do List, 5) Important Notes. Format this professionally for future reference.';
+    
+    default:
+      return 'Without addressing me directly, summarize our entire conversation above. Provide a comprehensive summary covering the main topics discussed, key points and insights, any action items mentioned, and important context for future reference. Present this as a clear, organized summary without addressing me directly.';
+  }
+}
+
+function insertSummarizePrompt(summaryType: string = 'quick'): boolean {
+  console.log('Attempting to insert summarize prompt with type:', summaryType);
   
   // Find ChatGPT's textarea input
   const textareaSelectors = [
@@ -331,8 +370,7 @@ function insertSummarizePrompt(): boolean {
     return false;
   }
 
-  // Create a direct, concise summarization prompt - FIXED VERSION
-  const summarizePrompt = `Summarize our entire conversation above. Provide a comprehensive summary covering the main topics discussed, key points and insights, any action items mentioned, and important context for future reference. Present this as a clear, organized summary without addressing me directly.`;
+  const summarizePrompt = getSummarizePrompt(summaryType);
 
   try {
     if (textarea.tagName.toLowerCase() === 'textarea') {
@@ -374,11 +412,106 @@ function insertSummarizePrompt(): boolean {
       selection?.addRange(range);
     }
     
-    console.log('Successfully inserted summarize prompt into chat input');
+    console.log(`Successfully inserted ${summaryType} summarize prompt into chat input`);
     return true;
     
   } catch (error) {
     console.error('Error during summarize prompt insertion:', error);
+    return false;
+  }
+}
+
+function insertContextSummaryPrompt(context: { title: string; body: string }): boolean {
+  console.log('Attempting to insert context summary prompt for:', context.title);
+  
+  // Find ChatGPT's textarea input
+  const textareaSelectors = [
+    'textarea[placeholder*="Message"]',
+    'textarea[placeholder*="message"]', 
+    'textarea[data-id="root"]',
+    '#prompt-textarea',
+    'textarea',
+    'div[contenteditable="true"]'
+  ];
+
+  let textarea: HTMLTextAreaElement | HTMLElement | null = null;
+  
+  for (const selector of textareaSelectors) {
+    const elements = document.querySelectorAll(selector);
+    const elementsArray = Array.from(elements);
+    
+    for (const element of elementsArray) {
+      const el = element as HTMLTextAreaElement | HTMLElement;
+      
+      if (el.offsetParent !== null && 
+          !('disabled' in el && el.disabled) && 
+          !('readOnly' in el && el.readOnly)) {
+        textarea = el;
+        console.log('Found input element with selector:', selector);
+        break;
+      }
+    }
+    if (textarea) break;
+  }
+
+  if (!textarea) {
+    console.error('Could not find ChatGPT input field');
+    alert('Could not find ChatGPT input field. Make sure you are in a chat.');
+    return false;
+  }
+
+  const contextSummaryPrompt = `Please provide a summary of this saved context:
+
+[Context: ${context.title}]
+
+${context.body}
+
+Summarize the key points, main topics, and important information from this context in a clear and organized way.`;
+
+  try {
+    if (textarea.tagName.toLowerCase() === 'textarea') {
+      const textareaEl = textarea as HTMLTextAreaElement;
+      const currentValue = textareaEl.value.trim();
+      
+      const newValue = currentValue ? `${currentValue}\n\n${contextSummaryPrompt}` : contextSummaryPrompt;
+      
+      textareaEl.value = newValue;
+      
+      // Trigger events
+      textareaEl.dispatchEvent(new Event('input', { bubbles: true }));
+      textareaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      textareaEl.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+      
+      textareaEl.focus();
+      textareaEl.setSelectionRange(textareaEl.value.length, textareaEl.value.length);
+      
+    } else if (textarea.contentEditable === 'true') {
+      const currentContent = textarea.innerHTML.trim();
+      const formattedPrompt = convertTextToHtml(contextSummaryPrompt);
+      
+      const newContent = currentContent ? 
+        `${currentContent}<br><br>${formattedPrompt}` : 
+        formattedPrompt;
+      
+      textarea.innerHTML = newContent;
+      
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+      
+      textarea.focus();
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.selectNodeContents(textarea);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    
+    console.log(`Successfully inserted context summary prompt for "${context.title}" into chat input`);
+    return true;
+    
+  } catch (error) {
+    console.error('Error during context summary prompt insertion:', error);
     return false;
   }
 }

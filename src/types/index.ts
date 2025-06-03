@@ -6,6 +6,8 @@ export interface ContextBlock {
   body: string;
   tags: string[];
   dateSaved: number;
+  isFavorite?: boolean;
+  lastUsed?: number;
 }
 
 export interface ChatMessage {
@@ -26,4 +28,17 @@ export interface ExtensionConfig {
   openaiApiKey?: string;
   autoSummarize: boolean;
   toolbarPosition: 'top-right' | 'bottom-right' | 'bottom-left';
+}
+
+export interface NavigationState {
+  activeSection: 'all' | 'recent' | 'favorites' | 'tags';
+  searchQuery: string;
+  tagFilter: string | null;
+}
+
+export interface ContextStats {
+  total: number;
+  recent: number;
+  favorites: number;
+  tags: string[];
 }
