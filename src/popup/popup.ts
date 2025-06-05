@@ -1,14 +1,14 @@
 // src/popup/popup.ts
 import './styles.css';
-import { 
-  getContextBlocks, 
-  deleteContextBlock, 
-  toggleFavorite, 
-  markAsUsed, 
+import {
+  getContextBlocks,
+  deleteContextBlock,
+  toggleFavorite,
+  markAsUsed,
   getContextStats,
   getRecentContexts,
   getFavoriteContexts,
-  exportAllContexts 
+  exportAllContexts
 } from '../utils/storage';
 import { ContextBlock, NavigationState } from '../types';
 
@@ -47,12 +47,12 @@ async function loadContexts(): Promise<void> {
     allContexts = await getContextBlocks();
     console.log('📚 Raw contexts from storage:', allContexts);
     console.log('📚 Number of contexts loaded:', allContexts.length);
-    
+
     // Sort contexts in descending order (most recent first)
     allContexts.sort((a, b) => b.dateSaved - a.dateSaved);
-    
+
     console.log('📚 Contexts after sorting:', allContexts);
-    
+
     applyCurrentFilters();
   } catch (error) {
     console.error('📚 Failed to load contexts:', error);
@@ -106,7 +106,7 @@ function setupEventListeners(): void {
 function handleNavigation(e: Event): void {
   const target = e.currentTarget as HTMLElement;
   const navType = target.getAttribute('data-nav') as NavigationState['activeSection'];
-  
+
   if (!navType) return;
 
   // Update active nav item
@@ -150,7 +150,7 @@ function togglePlusMenu(e: Event): void {
   e.stopPropagation();
   const plusMenu = document.getElementById('plus-menu');
   const summarizeMenu = document.getElementById('summarize-menu');
-  
+
   if (!plusMenu) return;
 
   // Hide summarize menu if open
@@ -167,7 +167,7 @@ function showSummarizeMenu(e: Event): void {
   e.stopPropagation();
   const plusMenu = document.getElementById('plus-menu');
   const summarizeMenu = document.getElementById('summarize-menu');
-  
+
   if (!summarizeMenu) return;
 
   // Hide plus menu
@@ -195,24 +195,189 @@ function handleOutsideClick(e: Event): void {
 async function handleSummarizeOption(e: Event): Promise<void> {
   const target = e.target as HTMLElement;
   const summaryType = target.getAttribute('data-summary-type');
-  
+
   if (!summaryType) return;
 
+  // Show persona selection menu
+  showPersonaSelection(summaryType);
+}
+
+// Add this new function after handleSummarizeOption:
+function showPersonaSelection(summaryType: string): void {
+  // Hide the current summarize menu
+  const summarizeMenu = document.getElementById('summarize-menu');
+  if (summarizeMenu) {
+    summarizeMenu.style.display = 'none';
+  }
+
+  // Create persona selection menu
+  const personaMenu = document.createElement('div');
+  personaMenu.id = 'persona-menu';
+  personaMenu.className = 'dropdown-menu';
+  personaMenu.style.cssText = `
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    min-width: 200px;
+    z-index: 1000;
+    display: block;
+  `;
+
+  personaMenu.innerHTML = `
+    <div class="menu-header" style="
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 4px;
+    ">
+      Choose Persona Style
+    </div>
+    <div class="menu-item persona-option" data-persona="executive" style="
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background-color 0.2s;
+    ">
+      <span style="font-size: 16px;">👔</span>
+      <div>
+        <div style="font-weight: 500;">Executive</div>
+        <div style="font-size: 12px; color: #666;">Clean, high-level format for stakeholders</div>
+      </div>
+    </div>
+    <div class="menu-item persona-option" data-persona="teammate" style="
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background-color 0.2s;
+    ">
+      <span style="font-size: 16px;">🤝</span>
+      <div>
+        <div style="font-weight: 500;">Teammate</div>
+        <div style="font-size: 12px; color: #666;">Conversational tone for collaboration</div>
+      </div>
+    </div>
+    <div class="menu-item persona-option" data-persona="analyst" style="
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background-color 0.2s;
+    ">
+      <span style="font-size: 16px;">📊</span>
+      <div>
+        <div style="font-weight: 500;">Analyst</div>
+        <div style="font-size: 12px; color: #666;">Structured, logical with actionable insights</div>
+      </div>
+    </div>
+    <div class="menu-item persona-option" data-persona="default" style="
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background-color 0.2s;
+      border-top: 1px solid #eee;
+      margin-top: 4px;
+    ">
+      <span style="font-size: 16px;">📝</span>
+      <div>
+        <div style="font-weight: 500;">Standard</div>
+        <div style="font-size: 12px; color: #666;">Default summarization style</div>
+      </div>
+    </div>
+  `;
+
+  // Add hover effects
+  const style = document.createElement('style');
+  style.textContent = `
+    .persona-option:hover {
+      background-color: #f5f5f5 !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Position the menu relative to the plus button
+  const plusBtn = document.getElementById('plus-btn');
+  if (plusBtn) {
+    const rect = plusBtn.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const menuWidth = 200; // min-width from CSS
+    const menuHeight = 240; // approximate height
+
+    // Calculate position to keep menu in viewport
+    let top = rect.bottom + 5;
+    let left = rect.right - menuWidth;
+
+    // Adjust if menu would go off-screen vertically
+    if (top + menuHeight > viewportHeight) {
+      top = rect.top - menuHeight - 5;
+    }
+
+    // Adjust if menu would go off-screen horizontally
+    if (left < 10) {
+      left = 10;
+    } else if (left + menuWidth > viewportWidth - 10) {
+      left = viewportWidth - menuWidth - 10;
+    }
+
+    personaMenu.style.top = `${top}px`;
+    personaMenu.style.left = `${left}px`;
+  }
+
+  // Add click handlers for persona options
+  personaMenu.querySelectorAll('.persona-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+      const persona = option.getAttribute('data-persona');
+      if (persona) {
+        executeWithPersona(summaryType, persona);
+        personaMenu.remove();
+      }
+    });
+  });
+
+  // Close menu when clicking outside
+  const closeHandler = (e: Event) => {
+    if (!personaMenu.contains(e.target as Node)) {
+      personaMenu.remove();
+      document.removeEventListener('click', closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 100);
+
+  document.body.appendChild(personaMenu);
+}
+
+// Add this new function to actually execute the summarization:
+async function executeWithPersona(summaryType: string, persona: string): Promise<void> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.id) {
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: 'SUMMARIZE_CHAT',
-        summaryType: summaryType
+        summaryType: summaryType,
+        persona: persona
       });
-      
+
       if (response && response.success) {
-        // Hide menus
+        // Hide any open menus
         const plusMenu = document.getElementById('plus-menu');
         const summarizeMenu = document.getElementById('summarize-menu');
         if (plusMenu) plusMenu.style.display = 'none';
         if (summarizeMenu) summarizeMenu.style.display = 'none';
-        
+
         window.close();
       } else {
         alert('Failed to insert summarize prompt. Make sure you are on a ChatGPT page.');
@@ -239,7 +404,7 @@ function applyCurrentFilters(): void {
     case 'tags':
       // For tags view, group by tags or show all if no specific tag filter
       if (navigationState.tagFilter) {
-        filtered = filtered.filter(context => 
+        filtered = filtered.filter(context =>
           context.tags.some(tag => tag.toLowerCase().includes(navigationState.tagFilter!.toLowerCase()))
         );
       }
@@ -308,7 +473,7 @@ async function updateStats(): Promise<void> {
     const stats = await getContextStats();
     const statsCount = document.getElementById('stats-count');
     const statsTitle = document.getElementById('stats-title');
-    
+
     if (statsCount) statsCount.textContent = stats.total.toString();
     if (statsTitle) {
       statsTitle.textContent = `You have ${stats.total} saved context${stats.total !== 1 ? 's' : ''}`;
@@ -321,7 +486,7 @@ async function updateStats(): Promise<void> {
 function renderContexts(): void {
   console.log('📚 Starting renderContexts...');
   console.log('📚 filteredContexts.length:', filteredContexts.length);
-  
+
   const contextsGrid = document.getElementById('contexts-grid');
   if (!contextsGrid) {
     console.error('📚 Contexts grid element not found!');
@@ -344,7 +509,7 @@ function renderContexts(): void {
 
   contextsGrid.innerHTML = filteredContexts.map(context => {
     console.log('📚 Rendering context:', context.title, 'ID:', context.id);
-    
+
     return `
       <div class="context-card" data-context-id="${context.id}">
         <div class="context-header">
@@ -362,9 +527,9 @@ function renderContexts(): void {
         </div>
         <div class="context-preview">${escapeHtml(truncateText(context.body, 150))}</div>
         <div class="context-tags">
-          ${context.tags.map(tag => 
-            `<span class="tag ${navigationState.tagFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
-          ).join('')}
+          ${context.tags.map(tag =>
+      `<span class="tag ${navigationState.tagFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
+    ).join('')}
         </div>
       </div>
     `;
@@ -374,7 +539,7 @@ function renderContexts(): void {
 
   // Add event listeners for context cards and actions
   setupContextEventListeners();
-  
+
   console.log('📚 renderContexts complete');
 }
 
@@ -385,7 +550,7 @@ function getEmptyStateMessage(): string {
     case 'favorites':
       return 'No favorite contexts yet. Star contexts to add them to your favorites.';
     case 'tags':
-      return navigationState.tagFilter 
+      return navigationState.tagFilter
         ? `No contexts found with tag "${navigationState.tagFilter}"`
         : 'Browse contexts by tags. Click on any tag to filter.';
     default:
@@ -401,7 +566,7 @@ function setupContextEventListeners(): void {
     card.addEventListener('click', (e) => {
       // Don't trigger on action button clicks
       if ((e.target as HTMLElement).closest('.action-btn')) return;
-      
+
       const contextId = card.getAttribute('data-context-id');
       if (contextId) viewContext(contextId);
     });
@@ -457,23 +622,23 @@ async function handleExportContext(contextId: string): Promise<void> {
 
   try {
     const content = `Title: ${context.title}\nDate Saved: ${new Date(context.dateSaved).toLocaleString()}\nTags: ${context.tags.join(', ')}\n\n${context.body}`;
-    
+
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    
+
     // Sanitize filename
     const sanitizedTitle = context.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     a.download = `chatseed_${sanitizedTitle}_${context.id.substring(0, 8)}.txt`;
     a.style.display = 'none';
-    
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
+
     URL.revokeObjectURL(url);
-    
+
     console.log(`Successfully exported context "${context.title}" as .txt file`);
   } catch (error) {
     console.error('Failed to export context:', error);
@@ -491,27 +656,27 @@ async function handleExportAllIndividual(): Promise<void> {
     // Create individual .txt files for each context
     for (const context of allContexts) {
       const content = `Title: ${context.title}\nDate Saved: ${new Date(context.dateSaved).toLocaleString()}\nTags: ${context.tags.join(', ')}\n\n${context.body}`;
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       // Sanitize filename
       const sanitizedTitle = context.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       a.download = `chatseed_${sanitizedTitle}_${context.id.substring(0, 8)}.txt`;
       a.style.display = 'none';
-      
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
+
       URL.revokeObjectURL(url);
-      
+
       // Small delay between downloads to avoid browser blocking
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     console.log(`Successfully exported ${allContexts.length} contexts as individual .txt files`);
   } catch (error) {
     console.error('Failed to export contexts:', error);
@@ -530,7 +695,7 @@ async function insertContext(contextId: string): Promise<void> {
         action: 'INSERT_CONTEXT',
         context: context
       });
-      
+
       if (response && response.success) {
         await markAsUsed(contextId);
         window.close();
@@ -622,10 +787,10 @@ function viewContext(contextId: string): void {
   `;
 
   document.body.appendChild(modal);
-  
+
   const closeBtn = modal.querySelector('#close-view-modal');
   closeBtn?.addEventListener('click', () => modal.remove());
-  
+
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove();
   });
@@ -648,7 +813,7 @@ function formatDate(timestamp: number): string {
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 1) {
     return 'Today';
   } else if (diffDays === 2) {
