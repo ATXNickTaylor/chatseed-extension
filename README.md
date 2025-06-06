@@ -152,6 +152,9 @@ For permission requests: [chatseed@revlytiq.io](mailto:chatseed@revlytiq.io)
 - **Issues**: [GitHub Issues](https://github.com/atxnicktaylor/chatseed-extension/issues)
 - **Email**: [chatseed@revlytiq.io](mailto:chatseed@revlytiq.io)
 - **Website**: [https://revlytiq.io/ChatSeed](https://revlytiq.io/ChatSeed)
+- **Feedback Form Link**: [https://revlytiq.fillout.com/chatseed-survey](https://revlytiq.fillout.com/chatseed-survey)
+- **Beta Access Form Link**: [https://revlytiq.fillout.com/chatseed-beta](https://revlytiq.fillout.com/chatseed-beta)
+- **Report an Issue Form Link**: [https://revlytiq.fillout.com/chatseed-support](https://revlytiq.fillout.com/chatseed-support)
 
 ---
 
