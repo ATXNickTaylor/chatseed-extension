@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "ChatSeed",
-  "version": "1.0.0",
-  "description": "Bridge your ChatGPT conversations - save context from any chat and seamlessly continue in new conversations.",
+  "version": "1.2.2",
+  "description": "Save and reuse ChatGPT conversations with privacy-first context management. Zero data collection, local storage only.",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
   },
-  "homepage_url": "https://revlytiq.io/ChatSeed",
+  "homepage_url": "https://github.com/YOUR-USERNAME/chatseed-extension",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://chat.openai.com/*",
