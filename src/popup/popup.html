@@ -1,104 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatSeed - Context Library</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatSeed</title>
 </head>
 <body>
-    <div class="container">
-        <!-- Banner at the top -->
-        <div class="banner">
-            <h1 class="banner-title">Context Library</h1>
-            <div class="banner-actions">
-                <button class="icon-btn export-btn" id="export-all-btn" title="Export All Contexts">📁</button>
-                <button class="icon-btn filter-btn" id="filter-toggle-btn" title="Filter Contexts">⚙️</button>
-            </div>
+  <div class="popup-container">
+    <!-- Header Banner -->
+    <div class="header-banner">
+      <div class="banner-content">
+        <img src="../assets/img/icon-48.png" alt="ChatSeed" class="banner-icon" />
+        <div class="banner-text">
+          <h1>ChatSeed</h1>
+          <p>Save and manage ChatGPT contexts</p>
         </div>
-
-        <!-- Filter Section (collapsible) -->
-        <div class="filter-section" id="filter-section" style="display: none;">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Keyword</label>
-                    <input type="text" id="filter-keyword" placeholder="Search by keyword...">
-                </div>
-                <div class="filter-group">
-                    <label>Tag</label>
-                    <input type="text" id="filter-tag" placeholder="Filter by tag...">
-                </div>
-                <div class="filter-group">
-                    <label>Date</label>
-                    <select id="filter-date">
-                        <option value="">All dates</option>
-                        <option value="today">Today</option>
-                        <option value="week">This week</option>
-                        <option value="month">This month</option>
-                        <option value="older">Older</option>
-                    </select>
-                </div>
+      </div>
+      <div class="banner-actions">
+        <button id="export-all-btn" class="banner-btn" title="Export All Contexts">
+          <img src="../assets/img/icon-export.png" alt="Export All" />
+        </button>
+        <div class="sidebar-header">
+          <button id="plus-btn" class="banner-btn" title="Add New">
+            <img src="../assets/img/icon-plus.png" alt="Add New" />
+          </button>
+          
+          <!-- Plus Menu -->
+          <div id="plus-menu" class="plus-menu">
+            <div class="menu-item" id="summarize-current-btn">
+              Summarize Current Chat
             </div>
+          </div>
+          
+          <!-- Summarize Menu -->
+          <div id="summarize-menu" class="summarize-menu">
+            <div class="menu-item" data-summary-type="quick">
+              Quick Summary
+            </div>
+            <div class="menu-item" data-summary-type="detailed">
+              Detailed Summary
+            </div>
+            <div class="menu-item" data-summary-type="business">
+              Business Summary
+            </div>
+          </div>
         </div>
-
-        <div class="main-container">
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <button class="plus-btn" id="plus-btn" title="Add New">➕</button>
-                    
-                    <!-- Plus Menu -->
-                    <div class="plus-menu" id="plus-menu" style="display: none;">
-                        <div class="menu-item" id="summarize-current-btn">Summarize Current Chat</div>
-                    </div>
-                    
-                    <!-- Summarize Menu -->
-                    <div class="summarize-menu" id="summarize-menu" style="display: none;">
-                        <div class="menu-item" data-summary-type="quick">Quick Summary (Main Topics)</div>
-                        <div class="menu-item" data-summary-type="detailed">Detailed Summary (Main Topics, Action Items, Things to Remember)</div>
-                        <div class="menu-item" data-summary-type="business">Business Summary (Executive Summary, Key Insights, Action Items, To-Do List, Important Notes)</div>
-                    </div>
-                </div>
-                
-                <div class="nav-section">
-                    <div class="nav-item active" data-nav="all">
-                        <div class="nav-icon"></div>
-                        All Contexts
-                    </div>
-                    <div class="nav-item" data-nav="recent">
-                        <div class="nav-icon"></div>
-                        Recent
-                    </div>
-                    <div class="nav-item" data-nav="favorites">
-                        <div class="nav-icon"></div>
-                        Favorites
-                    </div>
-                    <div class="nav-item" data-nav="tags">
-                        <div class="nav-icon"></div>
-                        Tags
-                    </div>
-                </div>
-            </div>
-
-            <div class="main-content">
-                <div class="search-container">
-                    <div class="search-icon"></div>
-                    <input type="text" class="search-input" id="search-input" placeholder="Search contexts...">
-                </div>
-
-                <div class="content-area">
-                    <div class="stats-banner" id="stats-banner">
-                        <div class="stats-icon" id="stats-count">0</div>
-                        <div class="stats-text">
-                            <div class="stats-title" id="stats-title">You have 0 saved contexts</div>
-                            <div class="stats-subtitle">Ready to use in your next ChatGPT conversation</div>
-                        </div>
-                    </div>
-
-                    <div class="contexts-grid" id="contexts-grid">
-                        <!-- Contexts will be loaded here dynamically -->
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <img src="../assets/img/icon-searchglass.png" alt="Search" class="search-icon" />
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="Search contexts..."
+          />
+        </div>
+        <button id="filter-toggle-btn" class="filter-toggle-btn" title="Toggle Filters">
+          <img src="../assets/img/icon-filter.png" alt="Filter" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div id="filter-section" class="filter-section">
+      <div class="filter-row">
+        <input
+          type="text"
+          id="filter-keyword"
+          class="filter-input"
+          placeholder="Filter by keyword..."
+        />
+        <input
+          type="text"
+          id="filter-tag"
+          class="filter-input"
+          placeholder="Filter by tag..."
+        />
+      </div>
+      <div class="filter-row">
+        <select id="filter-date" class="filter-select">
+          <option value="">All dates</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="older">Older</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+      <div class="nav-list">
+        <div class="nav-item active" data-nav="all">
+          <img src="../assets/img/icon-team.png" alt="All" />
+          All
+        </div>
+        <div class="nav-item" data-nav="recent">
+          <img src="../assets/img/icon-account.png" alt="Recent" />
+          Recent
+        </div>
+        <div class="nav-item" data-nav="favorites">
+          <img src="../assets/img/icon-bookmark.png" alt="Favorites" />
+          Favorites
+        </div>
+        <div class="nav-item" data-nav="tags">
+          <img src="../assets/img/icon-flag.png" alt="Tags" />
+          Tags
+        </div>
+      </div>
+    </div>
+
+    <!-- Green Divider -->
+    <div class="green-divider"></div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+      <div id="stats-count" class="stats-count">0</div>
+      <div id="stats-title" class="stats-title">No saved contexts</div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <div id="contexts-grid" class="contexts-grid">
+        <!-- Contexts will be dynamically populated here -->
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <div>No saved contexts found. Visit ChatGPT and save your first context!</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

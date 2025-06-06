@@ -42,7 +42,7 @@ function waitForChatInterface(): Promise<void> {
   });
 }
 
-// Create floating toolbar HTML with custom image
+// Create floating toolbar HTML with SVG button
 function createFloatingToolbar(): void {
   // Check if toolbar already exists
   if (document.getElementById('chatgpt-context-saver-toolbar')) {
@@ -91,7 +91,7 @@ function createFloatingToolbar(): void {
     button.style.filter = 'brightness(1)';
   });
 
-  // Add click handler - now uses the real save modal
+  // Add click handler
   button.addEventListener('click', () => {
     console.log('Context saver button clicked');
     try {
@@ -180,7 +180,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   if (message.action === 'SUMMARIZE_CHAT') {
     try {
-      const result = insertSummarizePrompt(message.summaryType || 'quick');
+      const result = insertSummarizePrompt(
+        message.summaryType || 'quick',
+        message.persona || 'default'
+      );
       console.log('Insert summarize prompt result:', result);
       sendResponse({ success: true });
     } catch (error) {
@@ -231,10 +234,10 @@ function insertContextIntoChat(context: { title: string; body: string }): boolea
 
   let textarea: HTMLTextAreaElement | HTMLElement | null = null;
   
-  // Try to find textarea first - FIXED VERSION
+  // Try to find textarea first
   for (const selector of textareaSelectors) {
     const elements = document.querySelectorAll(selector);
-    const elementsArray = Array.from(elements); // Convert NodeList to Array
+    const elementsArray = Array.from(elements);
     
     for (const element of elementsArray) {
       const el = element as HTMLTextAreaElement | HTMLElement;
@@ -257,7 +260,7 @@ function insertContextIntoChat(context: { title: string; body: string }): boolea
     return false;
   }
 
-  // Prepare context text with hardcoded memory update instruction
+  // Prepare context text with memory update instruction
   const contextText = `Please update your memory with the following information and do not address me directly:
 
 [Saved Context: ${context.title}]
@@ -267,7 +270,7 @@ ${context.body}`;
   try {
     if (textarea.tagName.toLowerCase() === 'textarea') {
       const textareaEl = textarea as HTMLTextAreaElement;
-      const currentValue = textareaEl.value.trim(); // Trim existing content
+      const currentValue = textareaEl.value.trim();
       
       // Only add spacing if there's existing content
       const newValue = currentValue ? `${currentValue}\n\n${contextText}` : contextText;
@@ -315,24 +318,66 @@ ${context.body}`;
   }
 }
 
-function getSummarizePrompt(summaryType: string): string {
+// Enhanced getSummarizePrompt with persona support
+function getSummarizePrompt(summaryType: string, persona: string = 'default'): string {
+  // Base content based on summary type (what to include)
+  let baseContent = '';
+
   switch (summaryType) {
     case 'quick':
-      return 'Without addressing me directly, summarize our conversation above focusing only on the main topics discussed. Keep it concise and organized.';
-    
+      baseContent = 'summarize our conversation above focusing only on the main topics discussed. Keep it concise and organized.';
+      break;
+
     case 'detailed':
-      return 'Without addressing me directly, provide a detailed summary of our conversation above including: 1) Main topics discussed, 2) Action items mentioned, 3) Important things to remember. Present this in a well-organized format.';
-    
+      baseContent = 'provide a detailed summary of our conversation above including: 1) Main topics discussed, 2) Action items mentioned, 3) Important things to remember. Present this in a well-organized format.';
+      break;
+
     case 'business':
-      return 'Without addressing me directly, create a comprehensive business summary of our conversation above with the following sections: 1) Executive Summary, 2) Key Insights, 3) Action Items, 4) To-Do List, 5) Important Notes. Format this professionally for future reference.';
-    
+      baseContent = 'create a comprehensive business summary of our conversation above with the following sections: 1) Executive Summary, 2) Key Insights, 3) Action Items, 4) To-Do List, 5) Important Notes. Format this professionally for future reference.';
+      break;
+
     default:
-      return 'Without addressing me directly, summarize our entire conversation above. Provide a comprehensive summary covering the main topics discussed, key points and insights, any action items mentioned, and important context for future reference. Present this as a clear, organized summary without addressing me directly.';
+      baseContent = 'summarize our entire conversation above. Provide a comprehensive summary covering the main topics discussed, key points and insights, any action items mentioned, and important context for future reference. Present this as a clear, organized summary.';
+      break;
   }
+
+  // Persona-based tone and structure modifications (how to present)
+  let personaPrefix = '';
+  let personaSuffix = '';
+
+  switch (persona) {
+    case 'executive':
+      personaPrefix = 'Acting as an executive assistant, ';
+      personaSuffix = ' Present this in a clean, high-level format suitable for stakeholders who need key decisions and takeaways at a glance.';
+      break;
+
+    case 'teammate':
+      personaPrefix = 'Acting as a helpful teammate, ';
+      personaSuffix = ' Write this in a conversational and friendly tone, prioritizing context and clarity for async collaboration or handoff.';
+      break;
+
+    case 'analyst':
+      personaPrefix = 'Acting as a business analyst, ';
+      personaSuffix = ' Structure this logically with clear bullet points, focusing on causality, decisions, and actionable insights.';
+      break;
+
+    case 'default':
+    default:
+      personaPrefix = '';
+      personaSuffix = '';
+      break;
+  }
+
+  // Combine persona tone with base content and trim any whitespace
+  const result = `Without addressing me directly, ${personaPrefix}${baseContent}${personaSuffix}`;
+  
+  // Ensure no leading/trailing whitespace in the final prompt
+  return result.trim();
 }
 
-function insertSummarizePrompt(summaryType: string = 'quick'): boolean {
-  console.log('Attempting to insert summarize prompt with type:', summaryType);
+// Enhanced insertSummarizePrompt with better whitespace handling
+function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 'default'): boolean {
+  console.log('Attempting to insert summarize prompt with type:', summaryType, 'and persona:', persona);
   
   // Find ChatGPT's textarea input
   const textareaSelectors = [
@@ -370,39 +415,102 @@ function insertSummarizePrompt(summaryType: string = 'quick'): boolean {
     return false;
   }
 
-  const summarizePrompt = getSummarizePrompt(summaryType);
+  const summarizePrompt = getSummarizePrompt(summaryType, persona);
+  
+  // Debug: Log the exact prompt being generated
+  console.log('Generated summarize prompt:', JSON.stringify(summarizePrompt));
 
   try {
     if (textarea.tagName.toLowerCase() === 'textarea') {
       const textareaEl = textarea as HTMLTextAreaElement;
-      const currentValue = textareaEl.value.trim();
       
-      // Only add spacing if there's existing content
-      const newValue = currentValue ? `${currentValue}\n${summarizePrompt}` : summarizePrompt;
+      // Get current value and handle whitespace more aggressively
+      let currentValue = textareaEl.value;
       
+      // Debug: Log current value
+      console.log('Current textarea value:', JSON.stringify(currentValue));
+      
+      // Remove all trailing whitespace from current content
+      currentValue = currentValue.replace(/\s+$/, '');
+      
+      // Remove any leading whitespace from the prompt
+      const cleanPrompt = summarizePrompt.replace(/^\s+/, '');
+      
+      // Debug: Log cleaned values
+      console.log('Cleaned current value:', JSON.stringify(currentValue));
+      console.log('Cleaned prompt:', JSON.stringify(cleanPrompt));
+      
+      // Build new value with proper spacing
+      let newValue;
+      if (currentValue.length > 0) {
+        // Add exactly two newlines between existing content and new prompt
+        newValue = currentValue + '\n\n' + cleanPrompt;
+      } else {
+        // If no existing content, just use the clean prompt
+        newValue = cleanPrompt;
+      }
+      
+      // Debug: Log final value
+      console.log('Final textarea value:', JSON.stringify(newValue));
+
       textareaEl.value = newValue;
-      
+
       // Trigger events
       textareaEl.dispatchEvent(new Event('input', { bubbles: true }));
       textareaEl.dispatchEvent(new Event('change', { bubbles: true }));
       textareaEl.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textareaEl.focus();
       textareaEl.setSelectionRange(textareaEl.value.length, textareaEl.value.length);
-      
+
     } else if (textarea.contentEditable === 'true') {
-      const currentContent = textarea.innerHTML.trim();
-      const formattedPrompt = convertTextToHtml(summarizePrompt);
+      // Handle contenteditable (ChatGPT's current implementation)
+      let currentContent = textarea.innerHTML;
       
-      const newContent = currentContent ? 
-        `${currentContent}<br>${formattedPrompt}` : 
-        formattedPrompt;
+      // Debug: Log current content
+      console.log('Current contenteditable content:', JSON.stringify(currentContent));
       
+      // Check if content is just the placeholder
+      const isPlaceholderOnly = currentContent.includes('data-placeholder') && 
+                              currentContent.includes('class="placeholder"') &&
+                              !currentContent.replace(/<[^>]*>/g, '').trim();
+      
+      console.log('Is placeholder only:', isPlaceholderOnly);
+      
+      let cleanedContent;
+      if (isPlaceholderOnly) {
+        // If it's just the placeholder, start fresh
+        cleanedContent = '';
+        console.log('Removed placeholder content');
+      } else {
+        // Clean existing content but preserve actual text
+        cleanedContent = currentContent.replace(/(<br\s*\/?>|\s)+$/, '');
+        console.log('Cleaned current content:', JSON.stringify(cleanedContent));
+      }
+      
+      // Convert prompt to HTML and remove leading whitespace
+      let formattedPrompt = convertTextToHtml(summarizePrompt);
+      formattedPrompt = formattedPrompt.replace(/^(<br\s*\/?>|\s)+/, '');
+      
+      // Debug: Log formatted prompt
+      console.log('Formatted prompt:', JSON.stringify(formattedPrompt));
+      
+      // Build new content with proper spacing
+      let newContent;
+      if (cleanedContent.length > 0) {
+        newContent = cleanedContent + '<br><br>' + formattedPrompt;
+      } else {
+        newContent = formattedPrompt;
+      }
+      
+      // Debug: Log final content
+      console.log('Final contenteditable content:', JSON.stringify(newContent));
+
       textarea.innerHTML = newContent;
-      
+
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textarea.focus();
       const range = document.createRange();
       const selection = window.getSelection();
@@ -412,7 +520,7 @@ function insertSummarizePrompt(summaryType: string = 'quick'): boolean {
       selection?.addRange(range);
     }
     
-    console.log(`Successfully inserted ${summaryType} summarize prompt into chat input`);
+    console.log(`Successfully inserted ${summaryType} summarize prompt with ${persona} persona into chat input`);
     return true;
     
   } catch (error) {

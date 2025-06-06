@@ -9,11 +9,7 @@
     "128": "icon-128.png"
   },
   "homepage_url": "https://revlytiq.io/ChatSeed",
-  "permissions": [
-    "activeTab",
-    "scripting", 
-    "storage"
-  ],
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*"
@@ -30,15 +26,36 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ChatSeed - Save and Bridge ChatGPT Conversations"
+    "default_title": "ChatSeed - Save and Bridge ChatGPT Conversations",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
   },
   "background": {
     "service_worker": "background.bundle.js"
   },
   "web_accessible_resources": [
     {
-      "resources": ["*.js", "*.css", "floating-button.png", "refresh-button.png"],
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+      "resources": [
+        "*.js",
+        "*.css",
+        "floating-button.png",
+        "refresh-button.png",
+        "icon-trash.png",
+        "icon-logo.png",
+        "icon-plus.png",
+        "icon-bookmark.png",
+        "icon-team.png",
+        "icon-account.png",
+        "icon-flag.png",
+        "icon-searchglass.png"
+      ],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*"
+      ]
     }
   ]
 }

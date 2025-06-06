@@ -6,8 +6,6 @@ var webpack = require('webpack'),
   HtmlWebpackPlugin = require('html-webpack-plugin'),
   TerserPlugin = require('terser-webpack-plugin');
 var { CleanWebpackPlugin } = require('clean-webpack-plugin');
-var ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
-var ReactRefreshTypeScript = require('react-refresh-typescript');
 
 const ASSET_PATH = process.env.ASSET_PATH || '/';
 
@@ -86,11 +84,6 @@ var options = {
           {
             loader: require.resolve('ts-loader'),
             options: {
-              getCustomTransformers: () => ({
-                before: [isDevelopment && ReactRefreshTypeScript()].filter(
-                  Boolean
-                ),
-              }),
               transpileOnly: isDevelopment,
             },
           },
@@ -104,11 +97,6 @@ var options = {
           },
           {
             loader: require.resolve('babel-loader'),
-            options: {
-              plugins: [
-                isDevelopment && require.resolve('react-refresh/babel'),
-              ].filter(Boolean),
-            },
           },
         ],
         exclude: /node_modules/,
@@ -122,15 +110,12 @@ var options = {
       .concat(['.js', '.jsx', '.ts', '.tsx', '.css']),
   },
   plugins: [
-    isDevelopment && new ReactRefreshWebpackPlugin(),
     new CleanWebpackPlugin({ verbose: false }),
     new webpack.ProgressPlugin(),
-    // Fix the NODE_ENV issue by providing a default value
-    new webpack.EnvironmentPlugin({
-      NODE_ENV: 'development'
-    }),
+    // CONSOLIDATED: All asset copying in single plugin
     new CopyWebpackPlugin({
       patterns: [
+        // Manifest file with package.json integration
         {
           from: 'src/manifest.json',
           to: path.join(__dirname, 'build'),
@@ -146,48 +131,123 @@ var options = {
             );
           },
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
+        // EXISTING ASSETS: Core extension icons and floating buttons
         {
           from: 'src/assets/img/floating-button.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
         {
           from: 'src/assets/img/refresh-button.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
         {
           from: 'src/assets/img/icon-16.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
         {
           from: 'src/assets/img/icon-48.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
         {
           from: 'src/assets/img/icon-128.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        // UI ASSETS - Navigation and core functionality icons
+        {
+          from: 'src/assets/img/icon-trash.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-bookmark.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-plus.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-searchglass.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-team.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-account.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-flag.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-logo.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        // v1.2.0 NEW ASSETS: Export and filter functionality
+        {
+          from: 'src/assets/img/icon-export.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-filter.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        // v1.2.0 NEW ASSETS: Persona icons
+        {
+          from: 'src/assets/img/icon-persona-executive.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-teammate.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-analyst.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-standard.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        // v1.2.0 NEW ASSETS: Individual context action icons
+        {
+          from: 'src/assets/img/icon-insert.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-export-single.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-edit.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-favorite.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },
