@@ -20,29 +20,46 @@
         <button id="export-all-btn" class="banner-btn" title="Export All Contexts">
           <img src="../assets/img/icon-export.png" alt="Export All" />
         </button>
-        <div class="sidebar-header">
-          <button id="plus-btn" class="banner-btn" title="Add New">
-            <img src="../assets/img/icon-plus.png" alt="Add New" />
-          </button>
-          
-          <!-- Plus Menu -->
-          <div id="plus-menu" class="plus-menu">
-            <div class="menu-item" id="summarize-current-btn">
-              Summarize Current Chat
-            </div>
+        <!-- SIMPLIFIED: Plus button goes directly to persona selection -->
+        <button id="plus-btn" class="banner-btn" title="Summarize Current Chat">
+          <img src="../assets/img/icon-plus.png" alt="Summarize" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Persona Selection Section -->
+    <div id="persona-section" class="persona-section">
+      <div class="persona-header">
+        <h3>Summarize Your Current Chat</h3>
+        <button id="persona-close-btn" class="persona-close-btn">×</button>
+      </div>
+      <div class="persona-grid">
+        <div class="persona-option" data-persona="executive">
+          <img src="../assets/img/icon-persona-executive.png" alt="Executive" />
+          <div class="persona-info">
+            <div class="persona-name">Executive</div>
+            <div class="persona-desc">Clean, high-level format for stakeholders</div>
           </div>
-          
-          <!-- Summarize Menu -->
-          <div id="summarize-menu" class="summarize-menu">
-            <div class="menu-item" data-summary-type="quick">
-              Quick Summary
-            </div>
-            <div class="menu-item" data-summary-type="detailed">
-              Detailed Summary
-            </div>
-            <div class="menu-item" data-summary-type="business">
-              Business Summary
-            </div>
+        </div>
+        <div class="persona-option" data-persona="teammate">
+          <img src="../assets/img/icon-persona-teammate.png" alt="Teammate" />
+          <div class="persona-info">
+            <div class="persona-name">Teammate</div>
+            <div class="persona-desc">Conversational tone for collaboration</div>
+          </div>
+        </div>
+        <div class="persona-option" data-persona="analyst">
+          <img src="../assets/img/icon-persona-analyst.png" alt="Analyst" />
+          <div class="persona-info">
+            <div class="persona-name">Analyst</div>
+            <div class="persona-desc">Structured, logical with actionable insights</div>
+          </div>
+        </div>
+        <div class="persona-option" data-persona="default">
+          <img src="../assets/img/icon-persona-standard.png" alt="Standard" />
+          <div class="persona-info">
+            <div class="persona-name">Standard</div>
+            <div class="persona-desc">Default summarization style</div>
           </div>
         </div>
       </div>

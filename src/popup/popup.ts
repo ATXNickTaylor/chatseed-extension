@@ -81,16 +81,17 @@ function setupEventListeners(): void {
   filterTag?.addEventListener('input', handleFilterChange);
   filterDate?.addEventListener('change', handleFilterChange);
 
-  // Plus button and menus
+  // SIMPLIFIED: Plus button goes directly to persona selection
   const plusBtn = document.getElementById('plus-btn');
-  const summarizeCurrentBtn = document.getElementById('summarize-current-btn');
+  plusBtn?.addEventListener('click', togglePersonaSection);
 
-  plusBtn?.addEventListener('click', togglePlusMenu);
-  summarizeCurrentBtn?.addEventListener('click', showSummarizeMenu);
+  // Persona section
+  const personaCloseBtn = document.getElementById('persona-close-btn');
+  personaCloseBtn?.addEventListener('click', hidePersonaSection);
 
-  // Summarize menu items
-  document.querySelectorAll('[data-summary-type]').forEach(item => {
-    item.addEventListener('click', handleSummarizeOption);
+  // Persona options
+  document.querySelectorAll('.persona-option').forEach(option => {
+    option.addEventListener('click', handlePersonaSelection);
   });
 
   // Navigation items
@@ -99,7 +100,7 @@ function setupEventListeners(): void {
     item.addEventListener('click', handleNavigation);
   });
 
-  // Close menus when clicking outside
+  // Close persona section when clicking outside
   document.addEventListener('click', handleOutsideClick);
 }
 
@@ -146,221 +147,44 @@ function handleFilterChange(): void {
   applyCurrentFilters();
 }
 
-function togglePlusMenu(e: Event): void {
+// SIMPLIFIED: Toggle persona section directly
+function togglePersonaSection(e: Event): void {
   e.stopPropagation();
-  const plusMenu = document.getElementById('plus-menu');
-  const summarizeMenu = document.getElementById('summarize-menu');
+  
+  const personaSection = document.getElementById('persona-section');
+  if (!personaSection) return;
 
-  if (!plusMenu) return;
-
-  // Hide summarize menu if open
-  if (summarizeMenu) {
-    summarizeMenu.style.display = 'none';
-  }
-
-  // Toggle plus menu
-  const isVisible = plusMenu.style.display === 'block';
-  plusMenu.style.display = isVisible ? 'none' : 'block';
+  // Toggle persona section visibility
+  personaSection.classList.toggle('show');
 }
 
-function showSummarizeMenu(e: Event): void {
-  e.stopPropagation();
-  const plusMenu = document.getElementById('plus-menu');
-  const summarizeMenu = document.getElementById('summarize-menu');
-
-  if (!summarizeMenu) return;
-
-  // Hide plus menu
-  if (plusMenu) {
-    plusMenu.style.display = 'none';
+function hidePersonaSection(): void {
+  const personaSection = document.getElementById('persona-section');
+  if (personaSection) {
+    personaSection.classList.remove('show');
   }
-
-  // Show summarize menu
-  summarizeMenu.style.display = 'block';
 }
 
 function handleOutsideClick(e: Event): void {
   const target = e.target as HTMLElement;
-  const plusBtn = document.getElementById('plus-btn');
-  const plusMenu = document.getElementById('plus-menu');
-  const summarizeMenu = document.getElementById('summarize-menu');
 
-  // Check if click is outside menus and plus button
-  if (!target.closest('#plus-btn') && !target.closest('#plus-menu') && !target.closest('#summarize-menu')) {
-    if (plusMenu) plusMenu.style.display = 'none';
-    if (summarizeMenu) summarizeMenu.style.display = 'none';
+  // Check if click is outside persona section and plus button
+  if (!target.closest('#plus-btn') && !target.closest('#persona-section')) {
+    hidePersonaSection();
   }
 }
 
-async function handleSummarizeOption(e: Event): Promise<void> {
-  const target = e.target as HTMLElement;
-  const summaryType = target.getAttribute('data-summary-type');
+// SIMPLIFIED: Handle persona selection directly (default to "detailed" summary)
+function handlePersonaSelection(e: Event): void {
+  const target = e.currentTarget as HTMLElement;
+  const persona = target.getAttribute('data-persona');
 
-  if (!summaryType) return;
+  if (!persona) return;
 
-  // Show persona selection menu
-  showPersonaSelection(summaryType);
+  // Use "detailed" as default summary type
+  executeWithPersona('detailed', persona);
 }
 
-// Enhanced persona selection with custom icons
-function showPersonaSelection(summaryType: string): void {
-  // Hide the current summarize menu
-  const summarizeMenu = document.getElementById('summarize-menu');
-  if (summarizeMenu) {
-    summarizeMenu.style.display = 'none';
-  }
-
-  // Create persona selection menu
-  const personaMenu = document.createElement('div');
-  personaMenu.id = 'persona-menu';
-  personaMenu.className = 'dropdown-menu';
-  personaMenu.style.cssText = `
-    position: fixed;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 8px 0;
-    min-width: 220px;
-    z-index: 1000;
-    display: block;
-  `;
-
-  personaMenu.innerHTML = `
-    <div class="menu-header" style="
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 4px;
-    ">
-      Choose Persona Style
-    </div>
-    <div class="menu-item persona-option" data-persona="executive" style="
-      padding: 12px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background-color 0.2s;
-    ">
-      <img src="${chrome.runtime.getURL('icon-persona-executive.png')}" style="width: 24px; height: 24px;" />
-      <div>
-        <div style="font-weight: 500; color: #333;">Executive</div>
-        <div style="font-size: 12px; color: #666;">Clean, high-level format for stakeholders</div>
-      </div>
-    </div>
-    <div class="menu-item persona-option" data-persona="teammate" style="
-      padding: 12px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background-color 0.2s;
-    ">
-      <img src="${chrome.runtime.getURL('icon-persona-teammate.png')}" style="width: 24px; height: 24px;" />
-      <div>
-        <div style="font-weight: 500; color: #333;">Teammate</div>
-        <div style="font-size: 12px; color: #666;">Conversational tone for collaboration</div>
-      </div>
-    </div>
-    <div class="menu-item persona-option" data-persona="analyst" style="
-      padding: 12px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background-color 0.2s;
-    ">
-      <img src="${chrome.runtime.getURL('icon-persona-analyst.png')}" style="width: 24px; height: 24px;" />
-      <div>
-        <div style="font-weight: 500; color: #333;">Analyst</div>
-        <div style="font-size: 12px; color: #666;">Structured, logical with actionable insights</div>
-      </div>
-    </div>
-    <div class="menu-item persona-option" data-persona="default" style="
-      padding: 12px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background-color 0.2s;
-      border-top: 1px solid #eee;
-      margin-top: 4px;
-    ">
-      <img src="${chrome.runtime.getURL('icon-persona-standard.png')}" style="width: 24px; height: 24px;" />
-      <div>
-        <div style="font-weight: 500; color: #333;">Standard</div>
-        <div style="font-size: 12px; color: #666;">Default summarization style</div>
-      </div>
-    </div>
-  `;
-
-  // Add hover effects
-  const style = document.createElement('style');
-  style.textContent = `
-    .persona-option:hover {
-      background-color: #f5f5f5 !important;
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Position the menu relative to the plus button
-  const plusBtn = document.getElementById('plus-btn');
-  if (plusBtn) {
-    const rect = plusBtn.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const menuWidth = 220;
-    const menuHeight = 260;
-
-    // Calculate position to keep menu in viewport
-    let top = rect.bottom + 5;
-    let left = rect.right - menuWidth;
-
-    // Adjust if menu would go off-screen vertically
-    if (top + menuHeight > viewportHeight) {
-      top = rect.top - menuHeight - 5;
-    }
-
-    // Adjust if menu would go off-screen horizontally
-    if (left < 10) {
-      left = 10;
-    } else if (left + menuWidth > viewportWidth - 10) {
-      left = viewportWidth - menuWidth - 10;
-    }
-
-    personaMenu.style.top = `${top}px`;
-    personaMenu.style.left = `${left}px`;
-  }
-
-  // Add click handlers for persona options
-  personaMenu.querySelectorAll('.persona-option').forEach(option => {
-    option.addEventListener('click', (e) => {
-      const persona = option.getAttribute('data-persona');
-      if (persona) {
-        executeWithPersona(summaryType, persona);
-        personaMenu.remove();
-      }
-    });
-  });
-
-  // Close menu when clicking outside
-  const closeHandler = (e: Event) => {
-    if (!personaMenu.contains(e.target as Node)) {
-      personaMenu.remove();
-      document.removeEventListener('click', closeHandler);
-    }
-  };
-  setTimeout(() => document.addEventListener('click', closeHandler), 100);
-
-  document.body.appendChild(personaMenu);
-}
-
-// Execute summarization with selected persona
 async function executeWithPersona(summaryType: string, persona: string): Promise<void> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -372,12 +196,8 @@ async function executeWithPersona(summaryType: string, persona: string): Promise
       });
 
       if (response && response.success) {
-        // Hide any open menus
-        const plusMenu = document.getElementById('plus-menu');
-        const summarizeMenu = document.getElementById('summarize-menu');
-        if (plusMenu) plusMenu.style.display = 'none';
-        if (summarizeMenu) summarizeMenu.style.display = 'none';
-
+        // Hide persona section
+        hidePersonaSection();
         window.close();
       } else {
         alert('Failed to insert summarize prompt. Make sure you are on a ChatGPT page.');
@@ -860,7 +680,7 @@ function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 1000));
 
   if (diffDays === 1) {
     return 'Today';
