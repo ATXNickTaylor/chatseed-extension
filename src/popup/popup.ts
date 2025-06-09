@@ -330,8 +330,12 @@ function renderContexts(): void {
   contextsGrid.innerHTML = filteredContexts.map(context => {
     console.log('📚 Rendering context:', context.title, 'ID:', context.id);
 
+    // Get platform-specific icon
+    const platformIcon = context.title.toLowerCase().includes('gemini') ? 'icon-gemini.png' : 'icon-gpt.png';
+
     return `
-      <div class="context-card" data-context-id="${context.id}">
+      <div class="context-card" data-context-id="${context.id}" style="position: relative;">
+        <img src="${chrome.runtime.getURL(platformIcon)}" style="position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; z-index: 1;" alt="${context.platform || 'chatgpt'}" title="Saved from ${context.platform === 'gemini' ? 'Gemini' : 'ChatGPT'}" />
         <div class="context-header">
           <div>
             <div class="context-title">${escapeHtml(context.title)}</div>

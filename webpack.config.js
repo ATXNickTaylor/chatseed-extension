@@ -251,6 +251,17 @@ var options = {
           to: path.join(__dirname, 'build'),
           force: true,
         },
+        // v1.3.0 NEW ASSETS: Platform icons for ChatGPT and Gemini support
+        {
+          from: 'src/assets/img/icon-gpt.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-gemini.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
       ],
     }),
     new HtmlWebpackPlugin({

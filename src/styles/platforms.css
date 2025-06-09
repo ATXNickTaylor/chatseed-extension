@@ -1,0 +1,284 @@
+/* ChatSeed Platform-Specific Styles */
+
+/* Platform Color Variables */
+:root {
+    --chatgpt-color: #10A37F;
+    --chatgpt-light: #E8F5F0;
+    --chatgpt-hover: #0D8A66;
+    
+    --gemini-color: #4285F4;
+    --gemini-light: #E8F1FF;
+    --gemini-hover: #3367D6;
+  }
+  
+  /* Platform Badge Components */
+  .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+    transition: all 0.1s ease;
+  }
+  
+  .platform-badge.chatgpt {
+    background: var(--chatgpt-light);
+    color: var(--chatgpt-color);
+    border-color: var(--chatgpt-color);
+  }
+  
+  .platform-badge.gemini {
+    background: var(--gemini-light);
+    color: var(--gemini-color);
+    border-color: var(--gemini-color);
+  }
+  
+  .platform-badge-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+  
+  /* Platform Icons */
+  .platform-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  
+  .platform-icon.chatgpt {
+    filter: brightness(0) saturate(100%) invert(33%) sepia(95%) saturate(1055%) hue-rotate(134deg) brightness(91%) contrast(101%);
+  }
+  
+  .platform-icon.gemini {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(93%) saturate(1735%) hue-rotate(213deg) brightness(97%) contrast(96%);
+  }
+  
+  /* Platform Filter Dropdown */
+  .platform-filter {
+    position: relative;
+    flex-shrink: 0;
+  }
+  
+  .platform-filter-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    min-width: 120px;
+    justify-content: space-between;
+  }
+  
+  .platform-filter-button:hover {
+    background: #f8f9fa;
+    border-color: #176548;
+  }
+  
+  .platform-filter-button:focus {
+    outline: none;
+    border-color: #176548;
+    box-shadow: 0 0 0 3px rgba(23, 101, 72, 0.1);
+  }
+  
+  .platform-filter-arrow {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.1s ease;
+  }
+  
+  .platform-filter-button.open .platform-filter-arrow {
+    transform: rotate(180deg);
+  }
+  
+  .platform-filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 4px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.1s ease;
+    pointer-events: none;
+  }
+  
+  .platform-filter-dropdown.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  
+  .platform-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    border-bottom: 1px solid #f8f9fa;
+  }
+  
+  .platform-filter-option:last-child {
+    border-bottom: none;
+  }
+  
+  .platform-filter-option:hover {
+    background: #f8f9fa;
+  }
+  
+  .platform-filter-option.active {
+    background: var(--chatgpt-light);
+    color: var(--chatgpt-color);
+    font-weight: 600;
+  }
+  
+  .platform-filter-option.active.gemini {
+    background: var(--gemini-light);
+    color: var(--gemini-color);
+  }
+  
+  /* Context Card Platform Indicators */
+  .context-card .platform-indicator {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+  }
+  
+  .context-card:hover .platform-indicator {
+    opacity: 0.9;
+  }
+  
+  /* Platform-specific context card accents */
+  .context-card.chatgpt {
+    border-left: 3px solid var(--chatgpt-color);
+  }
+  
+  .context-card.gemini {
+    border-left: 3px solid var(--gemini-color);
+  }
+  
+  .context-card.chatgpt:hover {
+    border-color: var(--chatgpt-color);
+    box-shadow: 0 2px 8px rgba(16, 163, 127, 0.15);
+  }
+  
+  .context-card.gemini:hover {
+    border-color: var(--gemini-color);
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+  }
+  
+  /* Save Modal Platform Indicator */
+  .save-modal-platform {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #6c757d;
+  }
+  
+  .save-modal-platform.chatgpt {
+    background: var(--chatgpt-light);
+    color: var(--chatgpt-color);
+  }
+  
+  .save-modal-platform.gemini {
+    background: var(--gemini-light);
+    color: var(--gemini-color);
+  }
+  
+  .save-modal-platform-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  /* Platform Statistics */
+  .platform-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .platform-stat {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+  }
+  
+  .platform-stat.chatgpt {
+    background: var(--chatgpt-light);
+    border-color: var(--chatgpt-color);
+  }
+  
+  .platform-stat.gemini {
+    background: var(--gemini-light);
+    border-color: var(--gemini-color);
+  }
+  
+  .platform-stat-count {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  
+  .platform-stat.chatgpt .platform-stat-count {
+    color: var(--chatgpt-color);
+  }
+  
+  .platform-stat.gemini .platform-stat-count {
+    color: var(--gemini-color);
+  }
+  
+  .platform-stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+  }
+  
+  /* Responsive Platform Badges */
+  @media (max-width: 380px) {
+    .platform-badge {
+      padding: 2px 6px;
+      font-size: 9px;
+    }
+    
+    .platform-badge-icon {
+      width: 10px;
+      height: 10px;
+    }
+    
+    .platform-filter-button {
+      min-width: 100px;
+      font-size: 12px;
+    }
+  }

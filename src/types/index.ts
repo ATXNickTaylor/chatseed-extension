@@ -8,6 +8,7 @@ export interface ContextBlock {
   dateSaved: number;
   isFavorite?: boolean;
   lastUsed?: number;
+  platform: 'chatgpt' | 'gemini'; // NEW FIELD
 }
 
 export interface ChatMessage {
@@ -41,4 +42,23 @@ export interface ContextStats {
   recent: number;
   favorites: number;
   tags: string[];
+}
+
+// NEW INTERFACES FOR PLATFORM SUPPORT
+export interface PlatformConfig {
+  name: string;
+  urlPattern: string;
+  selectors: {
+    input: string;
+    inputAlt?: string;
+    send: string;
+    userMessage: string;
+    aiMessage: string;
+    chatContainer: string;
+  };
+  inputType: 'textarea' | 'contenteditable';
+}
+
+export interface PlatformSelectors {
+  [key: string]: PlatformConfig;
 }

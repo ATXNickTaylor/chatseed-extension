@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ChatSeed",
-  "version": "1.2.2",
-  "description": "Save and reuse ChatGPT conversations with privacy-first context management. Zero data collection, local storage only.",
+  "version": "2.0.0",
+  "description": "Save and reuse Gemini or ChatGPT conversations interchangeably with privacy-first context management. Zero data collection, local storage only.",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
@@ -12,13 +12,15 @@
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://chat.openai.com/*",
-    "https://chatgpt.com/*"
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*"
       ],
       "js": ["contentScript.bundle.js"],
       "run_at": "document_end"
@@ -26,7 +28,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ChatSeed - Save and Bridge ChatGPT Conversations",
+    "default_title": "ChatSeed - Save and Bridge AI Conversations",
     "default_icon": {
       "16": "icon-16.png",
       "48": "icon-48.png",
@@ -50,11 +52,14 @@
         "icon-team.png",
         "icon-account.png",
         "icon-flag.png",
-        "icon-searchglass.png"
+        "icon-searchglass.png",
+        "icon-gemini.png",
+        "icon-gpt.png"
       ],
       "matches": [
         "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*"
       ]
     }
   ]

@@ -1,15 +1,24 @@
 // src/utils/storage.ts
 import { ContextBlock, ContextStats } from '../types';
+import { detectCurrentPlatform } from './platformDetection';
 
 // chrome.storage.local is Chrome's built-in storage API that persists data locally
 export const StorageKeys = {
   CONTEXT_BLOCKS: 'contextBlocks',
-  API_KEY: 'openaiApiKey'
+  API_KEY: 'openaiApiKey',
+  VERSION: 'version'
 } as const;
 
 export async function saveContextBlock(contextBlock: ContextBlock): Promise<void> {
   try {
     console.log('💾 Saving context block:', contextBlock);
+    
+    // Ensure platform is set
+    if (!contextBlock.platform) {
+      const currentPlatform = detectCurrentPlatform();
+      contextBlock.platform = (currentPlatform || 'chatgpt') as 'chatgpt' | 'gemini';
+    }
+    
     const existing = await getContextBlocks();
     console.log('💾 Existing contexts before save:', existing);
     const updated = [...existing, contextBlock];
@@ -34,12 +43,29 @@ export async function getContextBlocks(): Promise<ContextBlock[]> {
     console.log('📖 Raw storage result:', result);
     
     const contexts = result[StorageKeys.CONTEXT_BLOCKS] || [];
-    console.log('📖 Parsed contexts:', contexts);
-    console.log('📖 Number of contexts found:', contexts.length);
     
-    return contexts;
+    // Migrate legacy contexts without platform field
+    const migratedContexts = contexts.map((context: ContextBlock) => ({
+      ...context,
+      platform: context.platform || 'chatgpt'
+    }));
+    
+    console.log('📖 Parsed contexts:', migratedContexts);
+    console.log('📖 Number of contexts found:', migratedContexts.length);
+    
+    return migratedContexts;
   } catch (error) {
     console.error('📖 Failed to get context blocks:', error);
+    return [];
+  }
+}
+
+export async function getContextBlocksByPlatform(platform: string): Promise<ContextBlock[]> {
+  try {
+    const allContexts = await getContextBlocks();
+    return allContexts.filter(context => context.platform === platform);
+  } catch (error) {
+    console.error('Failed to get contexts by platform:', error);
     return [];
   }
 }

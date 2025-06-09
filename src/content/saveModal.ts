@@ -2,6 +2,7 @@
 import { extractAllMessages, formatMessagesForSaving, ChatMessage } from '../utils/messageExtractor';
 import { saveContextBlock } from '../utils/storage';
 import { ContextBlock } from '../types';
+import { detectCurrentPlatform, getPlatformDisplayName } from '../utils/platformDetection';
 
 let currentModal: HTMLElement | null = null;
 let selectedMessages: ChatMessage[] = [];
@@ -219,21 +220,45 @@ function createSaveModal(messages: ChatMessage[]): void {
 }
 
 function generateMessageList(messages: ChatMessage[]): string {
-  // Sort messages in descending order (most recent first)
+  // ENHANCED: Get current platform for proper labeling and icons (ADDED FUNCTIONALITY)
+  const currentPlatform = detectCurrentPlatform();
+  const platformName = getPlatformDisplayName(currentPlatform || 'chatgpt');
+  
+  // ENHANCED: Get platform-specific icon (ADDED FUNCTIONALITY)
+  const getAIIcon = () => {
+    if (currentPlatform === 'gemini') {
+      return chrome.runtime.getURL('icon-gemini.png');
+    } else {
+      return chrome.runtime.getURL('icon-gpt.png');
+    }
+  };
+  
+  const aiIconUrl = getAIIcon();
+  
+  // PRESERVED: Sort messages in descending order (most recent first)
   const sortedMessages = [...messages].reverse();
   
   return sortedMessages.map((message, index) => {
-    const roleIcon = message.role === 'user' ? '👤' : '🤖';
-    const roleLabel = message.role === 'user' ? 'User Message' : 'ChatGPT Reply';
+    // ENHANCED: Platform-aware icon and label (MODIFIED FROM ORIGINAL)
+    const isUser = message.role === 'user';
+    const roleIcon = isUser ? '👤' : `<img src="${aiIconUrl}" style="width: 20px; height: 20px; border-radius: 4px; vertical-align: middle;" alt="${platformName}">`;
+    const roleLabel = isUser ? 'User Message' : `${platformName} Reply`; // CHANGED FROM: 'ChatGPT Reply'
+    
+    // PRESERVED: Original preview logic
     const preview = message.content.length > 100 
       ? message.content.substring(0, 100) + '...' 
       : message.content;
     
-    // Add "most recent" indicator to the first message (index 0)
+    // PRESERVED: Add "most recent" indicator to the first message (index 0)
     const isFirstMessage = index === 0;
     const recentIndicator = isFirstMessage 
       ? '<div style="font-style: italic; color: #666; font-size: 12px; margin-top: 4px;">This is the most recent message in your current chat.</div>'
       : '';
+    
+    // ENHANCED: Platform-specific background colors (ADDED FUNCTIONALITY)
+    const backgroundColor = isUser 
+      ? '#f8f9ff'  // Light blue for user (PRESERVED)
+      : (currentPlatform === 'gemini' ? '#f0f7ff' : '#f0fff4'); // ENHANCED: Platform-specific colors
     
     return `
       <div style="
@@ -241,7 +266,7 @@ function generateMessageList(messages: ChatMessage[]): string {
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 8px;
-        background: ${message.role === 'user' ? '#f8f9ff' : '#f0fff4'};
+        background: ${backgroundColor};
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         transition: all 0.2s ease;
       ">
@@ -252,7 +277,7 @@ function generateMessageList(messages: ChatMessage[]): string {
             transform: scale(1.2);
           ">
           <div style="flex: 1;">
-            <div style="font-weight: bold; margin-bottom: 4px; color: #333;">
+            <div style="font-weight: bold; margin-bottom: 4px; color: #333; display: flex; align-items: center; gap: 8px;">
               ${roleIcon} ${roleLabel}
             </div>
             <div style="color: #666; font-size: 14px; line-height: 1.4;">
@@ -266,6 +291,7 @@ function generateMessageList(messages: ChatMessage[]): string {
   }).join('');
 }
 
+// PRESERVED: All original event listener functions unchanged
 function setupModalEventListeners(messages: ChatMessage[]): void {
   // Close button
   const closeBtn = document.getElementById('close-modal-btn');
@@ -296,6 +322,7 @@ function handleEscapeKey(e: KeyboardEvent): void {
   }
 }
 
+// PRESERVED: All original save logic unchanged
 async function handleSaveContext(allMessages: ChatMessage[]): Promise<void> {
   console.log('💾 Starting save context process...');
   
@@ -329,13 +356,14 @@ async function handleSaveContext(allMessages: ChatMessage[]): Promise<void> {
   const tagsText = tagsInput?.value.trim() || '';
   const tags = tagsText ? tagsText.split(',').map(tag => tag.trim()).filter(Boolean) : [];
 
-  // Create context block
+  // Create context block with platform field
   const contextBlock: ContextBlock = {
     id: `context_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     title,
     body: formatMessagesForSaving(selectedMessages),
     tags,
-    dateSaved: Date.now()
+    dateSaved: Date.now(),
+    platform: (detectCurrentPlatform() || 'chatgpt') as 'chatgpt' | 'gemini'
   };
 
   console.log('💾 Created context block:', contextBlock);
