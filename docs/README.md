@@ -3,12 +3,12 @@
 # ChatSeed - AI Context Manager
 
 [![GitHub Release](https://img.shields.io/badge/GitHub-Release-brightgreen)](https://github.com/ATXNickTaylor/chatseed-extension/releases)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/ATXNickTaylor/chatseed-extension)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/ATXNickTaylor/chatseed-extension/releases/tag/v1.2.2)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange)](https://developer.chrome.com/docs/extensions/mv3/)
 
 ChatSeed enables you to save conversation contexts from AI platforms and seamlessly bridge them across different chat sessions. Works with both ChatGPT and Gemini - save from one, use in the other!
 
-**🎉 Version 2.0.0 Released - June 10, 2025**
+**🎉 Version 2.0.0 Releasing - June 10, 2025**
 
 ## 🌟 Features
 
@@ -39,22 +39,22 @@ ChatSeed enables you to save conversation contexts from AI platforms and seamles
 
 #### Step 1: Download ChatSeed
 1. Go to [ChatSeed Releases](https://github.com/ATXNickTaylor/chatseed-extension/releases)
-2. Click on the latest `chatseed-v2.0.0.zip` file to download it
+2. Click on the latest `chatseed-v#.#.#.zip` file to download it
 3. The ZIP file will download to your Downloads folder
 
 #### Step 2: Extract (Unzip) the Files
 
 **Windows:**
-1. Go to your Downloads folder and find `chatseed-v2.0.0.zip`
+1. Go to your Downloads folder and find `chatseed-v#.#.#.zip`
 2. Right-click on the ZIP file
 3. Select "Extract All..." from the menu
 4. Choose where to extract (or use the default location)
 5. Click "Extract" - this creates a new folder with all the extension files
 
 **Mac:**
-1. Go to your Downloads folder and find `chatseed-v2.0.0.zip`
+1. Go to your Downloads folder and find `chatseed-v#.#.#.zip`
 2. Double-click the ZIP file - it will automatically extract
-3. You'll see a new folder called `chatseed-v2.0.0` with all the extension files
+3. You'll see a new folder called `chatseed-v#.#.#` with all the extension files
 
 #### Step 3: Install in Chrome
 
@@ -346,6 +346,7 @@ Copyright (c) 2025 RevlytIQ LLC
 - **Feedback Form**: [https://revlytiq.fillout.com/chatseed-survey](https://revlytiq.fillout.com/chatseed-survey)
 - **Beta Access**: [https://revlytiq.fillout.com/chatseed-beta](https://revlytiq.fillout.com/chatseed-beta)
 - **Report Issues**: [https://revlytiq.fillout.com/chatseed-support](https://revlytiq.fillout.com/chatseed-support)
+- **Request A Feature**: [https://revlytiq.fillout.com/feature-request](https://revlytiq.fillout.com/feature-request)
 
 ## 💻 System Requirements
 
