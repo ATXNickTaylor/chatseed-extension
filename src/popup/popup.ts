@@ -331,7 +331,7 @@ function renderContexts(): void {
     console.log('📚 Rendering context:', context.title, 'ID:', context.id);
 
     // Get platform-specific icon
-    const platformIcon = context.title.toLowerCase().includes('gemini') ? 'icon-gemini.png' : 'icon-gpt.png';
+    const platformIcon = context.platform === 'gemini' ? 'icon-gemini.png' : 'icon-gpt.png';
 
     return `
       <div class="context-card" data-context-id="${context.id}" style="position: relative;">

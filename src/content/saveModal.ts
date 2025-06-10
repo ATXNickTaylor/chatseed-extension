@@ -325,8 +325,19 @@ function handleEscapeKey(e: KeyboardEvent): void {
 // PRESERVED: All original save logic unchanged
 async function handleSaveContext(allMessages: ChatMessage[]): Promise<void> {
   console.log('💾 Starting save context process...');
+
+// ADD THIS DEBUGGING CODE HERE:
+const detectedPlatform = detectCurrentPlatform();
+console.log('🔍 Platform Detection:');
+console.log('  URL:', window.location.href);
+console.log('  Hostname:', window.location.hostname);  
+console.log('  Pathname:', window.location.pathname);
+console.log('  Detected:', detectedPlatform);
+console.log('  Final platform:', detectedPlatform || 'chatgpt');
+
+const titleInput = document.getElementById('context-title') as HTMLInputElement;
+// ... rest of the existing code continues
   
-  const titleInput = document.getElementById('context-title') as HTMLInputElement;
   const tagsInput = document.getElementById('context-tags') as HTMLInputElement;
   
   const title = titleInput?.value.trim();
