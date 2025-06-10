@@ -33,6 +33,52 @@ ChatSeed enables you to save conversation contexts from AI platforms and seamles
 - **Zero Data Transmission**: No external servers, complete privacy
 - **Minimal Permissions**: Only requires access to ChatGPT and Gemini domains
 
+## 🚧 Quality of Life Features in Development
+
+We're continuously improving ChatSeed with everyday usage enhancements while maintaining our commitment to local-only operation. Here's what's currently in development:
+
+### **UI/UX Polish**
+- **High-res icons**: 2x/3x resolution for Retina displays
+- **Instant tooltips**: <100ms hover delay for better responsiveness
+- **Better visual hierarchy**: Make primary actions (Insert, Save) more prominent
+- **Hover states**: Subtle animations on buttons/cards for improved feedback
+- **Loading states**: Skeleton loaders while contexts load
+
+### **Context Management**
+- **Auto-suggest titles**: Based on conversation content analysis
+- **Quick save**: Save entire conversation with one click + auto-title
+- **Smart whitespace removal**: Automatic cleanup without manual trimming
+- **Preview before save**: Show formatted output before committing
+- **Context splitting**: Break large contexts into smaller, manageable pieces
+
+### **Search & Organization**
+- **Enhanced filtering**: Date ranges, platform filtering, usage-based sorting
+- **Folders/Collections**: Group related contexts together
+- **Auto-categorization**: Suggest tags based on content patterns
+- **Bulk actions**: Select multiple contexts for batch export/delete
+- **Context relationships**: Link related contexts together
+
+### **Performance & Reliability**
+- **Lazy loading**: Load context previews only when needed
+- **Search optimization**: Instant search results (<50ms response time)
+- **Memory management**: Better cleanup for large context collections
+- **Storage compression**: Reduce storage footprint for large collections
+
+### **Workflow Enhancements**
+- **Keyboard shortcuts**: Space to preview, Enter to insert, Delete to remove
+- **Insert modes**: Replace current text vs append options
+- **Context merging**: Combine multiple contexts into one
+- **Usage analytics**: Which contexts are most valuable to you
+
+### **Top Priority Recommendations**
+1. **Smart whitespace removal** - Fixes immediate user frustration
+2. **Auto-suggest titles** - Reduces cognitive load during saves  
+3. **Instant tooltips** - Better UI responsiveness
+4. **Keyboard shortcuts** - Power user efficiency
+5. **High-res icons** - Professional appearance
+
+*Note: This list is not all-inclusive and may change without notice. All features maintain our commitment to local-only operation with no external servers. Have an idea for improving ChatSeed? Submit a feature request at [https://revlytiq.fillout.com/feature-request](https://revlytiq.fillout.com/feature-request)*
+
 ## 🚀 Installation
 
 ### For Users
