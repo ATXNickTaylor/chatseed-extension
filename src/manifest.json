@@ -9,7 +9,7 @@
     "128": "icon-128.png"
   },
   "homepage_url": "https://github.com/YOUR-USERNAME/chatseed-extension",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
