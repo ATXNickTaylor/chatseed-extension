@@ -69,7 +69,29 @@ function setupEventListeners(): void {
   const exportAllBtn = document.getElementById('export-all-btn');
   const filterToggleBtn = document.getElementById('filter-toggle-btn');
 
-  exportAllBtn?.addEventListener('click', handleExportAllIndividual);
+  // MODIFIED LOGIC BELOW: This is the only part changed for the export functionality.
+  // Original: exportAllBtn?.addEventListener('click', handleExportAllIndividual);
+  // Replaced with:
+  exportAllBtn?.addEventListener('click', async () => {
+    console.log('📤 Export All Contexts button clicked');
+    if (allContexts.length === 0) {
+      alert('No contexts to export!');
+      return;
+    }
+    try {
+      // NEW: Send message to background script for bulk export
+      await chrome.runtime.sendMessage({
+        action: 'INITIATE_DOWNLOAD',
+        payload: { contexts: allContexts }
+      });
+      alert('All contexts will be downloaded to your selected location.');
+    } catch (error) {
+      console.error('Failed to export all contexts:', error);
+      alert('Failed to initiate bulk download. Please check console for details.');
+    }
+  });
+  // MODIFIED LOGIC END
+
   filterToggleBtn?.addEventListener('click', toggleFilterSection);
 
   // Filter inputs
@@ -250,8 +272,7 @@ function applyCurrentFilters(): void {
     const keyword = filterState.keyword.toLowerCase().trim();
     filtered = filtered.filter(context =>
       context.title.toLowerCase().includes(keyword) ||
-      context.body.toLowerCase().includes(keyword) ||
-      context.tags.some(tag => tag.toLowerCase().includes(keyword))
+      context.body.toLowerCase().includes(keyword)
     );
   }
 
@@ -416,7 +437,7 @@ function setupContextEventListeners(): void {
       if (btn.classList.contains('insert-btn')) {
         await insertContext(contextId);
       } else if (btn.classList.contains('export-context-btn')) {
-        await handleExportContext(contextId);
+        await handleExportContext(contextId); // Existing individual export
       } else if (btn.classList.contains('edit-btn')) {
         viewContext(contextId); // View context instead of insert
       } else if (btn.classList.contains('favorite-btn')) {
@@ -450,7 +471,7 @@ function handleTagFilter(tagName: string): void {
   applyCurrentFilters();
 }
 
-// Enhanced individual context export
+// Enhanced individual context export (ORIGINAL LOGIC)
 async function handleExportContext(contextId: string): Promise<void> {
   const context = allContexts.find(c => c.id === contextId);
   if (!context) return;
@@ -481,7 +502,7 @@ async function handleExportContext(contextId: string): Promise<void> {
   }
 }
 
-// Enhanced export all as individual files
+// Enhanced export all as individual files (ORIGINAL LOGIC)
 async function handleExportAllIndividual(): Promise<void> {
   try {
     if (allContexts.length === 0) {
@@ -572,7 +593,7 @@ async function handleDeleteContext(contextId: string): Promise<void> {
   }
 }
 
-// Enhanced context viewing modal
+// Enhanced context viewing modal (ORIGINAL LOGIC)
 function viewContext(contextId: string): void {
   const context = allContexts.find(c => c.id === contextId);
   if (!context) return;

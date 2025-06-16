@@ -3,9 +3,10 @@ import { extractAllMessages, formatMessagesForSaving, ChatMessage } from '../uti
 import { saveContextBlock } from '../utils/storage';
 import { ContextBlock } from '../types';
 import { detectCurrentPlatform, getPlatformDisplayName } from '../utils/platformDetection';
+import { sendDataToBackgroundForDownload, formatContextForExport } from '../utils/file-management/fileSaver'; // Import updated function names
 
 let currentModal: HTMLElement | null = null;
-let selectedMessages: ChatMessage[] = [];
+let selectedMessageIds: string[] = []; // Changed to store IDs for easier management
 
 export function openSaveModal(): void {
   // Close existing modal if open
@@ -24,7 +25,7 @@ export function openSaveModal(): void {
   createSaveModal(allMessages);
 }
 
-function createSaveModal(messages: ChatMessage[]): void {
+function createSaveModal(allMessages: ChatMessage[]): void {
   // Create modal overlay
   const overlay = document.createElement('div');
   overlay.id = 'context-save-modal-overlay';
@@ -41,367 +42,266 @@ function createSaveModal(messages: ChatMessage[]): void {
     justify-content: center;
   `;
 
-  // Create modal content
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    background: white;
+  // Create modal content container
+  const modalContent = document.createElement('div');
+  modalContent.id = 'context-save-modal-content';
+  modalContent.style.cssText = `
+    background: #fff;
+    padding: 25px;
     border-radius: 12px;
-    padding: 24px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
     max-width: 600px;
-    max-height: 80vh;
+    max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
     position: relative;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
   `;
 
-  modal.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin: 0; color: #333; font-size: 24px;">Save Context</h2>
-      <button id="close-modal-btn" style="
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #666;
-        padding: 4px;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-      ">×</button>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-        Title *
-      </label>
-      <input type="text" id="context-title" placeholder="Enter a title for this context..." style="
-        width: 100%;
-        padding: 12px;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        box-sizing: border-box;
-        background: white;
-        color: #333;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-      ">
-    </div>
-
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-        Tags (comma-separated)
-      </label>
-      <input type="text" id="context-tags" placeholder="tag1, tag2, tag3..." style="
-        width: 100%;
-        padding: 12px;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        box-sizing: border-box;
-        background: white;
-        color: #333;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-      ">
-    </div>
-
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 12px; font-weight: bold; color: #333;">
-        Select Messages to Save:
-      </label>
-      <div id="message-list" style="
-        border: none;
-        border-radius: 8px;
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      ">
-        ${generateMessageList(messages)}
-      </div>
-    </div>
-
-    <div style="display: flex; gap: 12px; justify-content: flex-end;">
-      <button id="cancel-save-btn" style="
-        padding: 12px 24px;
-        border: none;
-        background: #f8f9fa;
-        color: #333;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-      ">Cancel</button>
-      <button id="save-context-btn" style="
-        padding: 12px 24px;
-        background: #10a37f;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-      ">Save Context</button>
-    </div>
-  `;
-
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-  currentModal = overlay;
-
-  // Add hover effects for modal buttons
-  const closeBtn = overlay.querySelector('#close-modal-btn') as HTMLElement;
-  const cancelBtn = overlay.querySelector('#cancel-save-btn') as HTMLElement;
-  const saveBtn = overlay.querySelector('#save-context-btn') as HTMLElement;
-  const titleInput = overlay.querySelector('#context-title') as HTMLElement;
-  const tagsInput = overlay.querySelector('#context-tags') as HTMLElement;
-
-  if (closeBtn) {
-    closeBtn.addEventListener('mouseenter', () => {
-      closeBtn.style.background = '#f0f0f0';
-      closeBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    });
-    closeBtn.addEventListener('mouseleave', () => {
-      closeBtn.style.background = 'none';
-      closeBtn.style.boxShadow = 'none';
-    });
-  }
-
-  if (cancelBtn) {
-    cancelBtn.addEventListener('mouseenter', () => {
-      cancelBtn.style.background = '#e9ecef';
-      cancelBtn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-      cancelBtn.style.transform = 'translateY(-1px)';
-    });
-    cancelBtn.addEventListener('mouseleave', () => {
-      cancelBtn.style.background = '#f8f9fa';
-      cancelBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-      cancelBtn.style.transform = 'translateY(0)';
-    });
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener('mouseenter', () => {
-      saveBtn.style.background = '#0e8c6b';
-      saveBtn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-      saveBtn.style.transform = 'translateY(-1px)';
-    });
-    saveBtn.addEventListener('mouseleave', () => {
-      saveBtn.style.background = '#10a37f';
-      saveBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-      saveBtn.style.transform = 'translateY(0)';
-    });
-  }
-
-  if (titleInput) {
-    titleInput.addEventListener('focus', () => {
-      titleInput.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-    });
-    titleInput.addEventListener('blur', () => {
-      titleInput.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    });
-  }
-
-  if (tagsInput) {
-    tagsInput.addEventListener('focus', () => {
-      tagsInput.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-    });
-    tagsInput.addEventListener('blur', () => {
-      tagsInput.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    });
-  }
-
-  // Add event listeners
-  setupModalEventListeners(messages);
-}
-
-function generateMessageList(messages: ChatMessage[]): string {
-  // ENHANCED: Get current platform for proper labeling and icons (ADDED FUNCTIONALITY)
-  const currentPlatform = detectCurrentPlatform();
-  const platformName = getPlatformDisplayName(currentPlatform || 'chatgpt');
-  
-  // ENHANCED: Get platform-specific icon (ADDED FUNCTIONALITY)
-  const getAIIcon = () => {
-    if (currentPlatform === 'gemini') {
-      return chrome.runtime.getURL('icon-gemini.png');
-    } else {
-      return chrome.runtime.getURL('icon-gpt.png');
-    }
-  };
-  
-  const aiIconUrl = getAIIcon();
-  
-  // PRESERVED: Sort messages in descending order (most recent first)
-  const sortedMessages = [...messages].reverse();
-  
-  return sortedMessages.map((message, index) => {
-    // ENHANCED: Platform-aware icon and label (MODIFIED FROM ORIGINAL)
-    const isUser = message.role === 'user';
-    const roleIcon = isUser ? '👤' : `<img src="${aiIconUrl}" style="width: 20px; height: 20px; border-radius: 4px; vertical-align: middle;" alt="${platformName}">`;
-    const roleLabel = isUser ? 'User Message' : `${platformName} Reply`; // CHANGED FROM: 'ChatGPT Reply'
-    
-    // PRESERVED: Original preview logic
-    const preview = message.content.length > 100 
-      ? message.content.substring(0, 100) + '...' 
-      : message.content;
-    
-    // PRESERVED: Add "most recent" indicator to the first message (index 0)
-    const isFirstMessage = index === 0;
-    const recentIndicator = isFirstMessage 
-      ? '<div style="font-style: italic; color: #666; font-size: 12px; margin-top: 4px;">This is the most recent message in your current chat.</div>'
-      : '';
-    
-    // ENHANCED: Platform-specific background colors (ADDED FUNCTIONALITY)
-    const backgroundColor = isUser 
-      ? '#f8f9ff'  // Light blue for user (PRESERVED)
-      : (currentPlatform === 'gemini' ? '#f0f7ff' : '#f0fff4'); // ENHANCED: Platform-specific colors
-    
-    return `
-      <div style="
-        border: none;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-        background: ${backgroundColor};
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease;
-      ">
-        <label style="display: flex; align-items: flex-start; cursor: pointer;">
-          <input type="checkbox" data-message-id="${message.id}" style="
-            margin-right: 12px;
-            margin-top: 2px;
-            transform: scale(1.2);
-          ">
-          <div style="flex: 1;">
-            <div style="font-weight: bold; margin-bottom: 4px; color: #333; display: flex; align-items: center; gap: 8px;">
-              ${roleIcon} ${roleLabel}
-            </div>
-            <div style="color: #666; font-size: 14px; line-height: 1.4;">
-              ${preview}
-            </div>
-            ${recentIndicator}
-          </div>
-        </label>
-      </div>
-    `;
-  }).join('');
-}
-
-// PRESERVED: All original event listener functions unchanged
-function setupModalEventListeners(messages: ChatMessage[]): void {
   // Close button
-  const closeBtn = document.getElementById('close-modal-btn');
-  closeBtn?.addEventListener('click', closeSaveModal);
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '&times;';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+    padding: 5px;
+  `;
+  closeButton.onclick = closeSaveModal;
+  modalContent.appendChild(closeButton);
 
-  // Cancel button
-  const cancelBtn = document.getElementById('cancel-save-btn');
-  cancelBtn?.addEventListener('click', closeSaveModal);
+  // Title
+  const titleHeader = document.createElement('h2');
+  titleHeader.textContent = `Save Context from ${getPlatformDisplayName(detectCurrentPlatform() || 'ChatGPT')}`;
+  titleHeader.style.cssText = `
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #1A5445;
+    font-size: 22px;
+    text-align: center;
+  `;
+  modalContent.appendChild(titleHeader);
+
+  // Message selection area
+  const messagesContainer = document.createElement('div');
+  messagesContainer.style.cssText = `
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 250px;
+  `;
+
+  allMessages.forEach((msg, index) => {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message-item';
+    messageDiv.style.cssText = `
+      padding: 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed #eee;
+      display: flex;
+      align-items: flex-start;
+      background: #f9f9f9;
+      border-radius: 6px;
+    `;
+    if (index === allMessages.length - 1) { // Pre-select the last message
+      messageDiv.style.background = '#e6f3ed'; // Highlight pre-selected
+      selectedMessageIds.push(msg.id);
+    }
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'message-checkbox';
+    checkbox.value = msg.id;
+    checkbox.checked = selectedMessageIds.includes(msg.id); // Set checked state based on selection
+    checkbox.style.cssText = `
+      margin-right: 10px;
+      margin-top: 5px; /* Align checkbox with text */
+      transform: scale(1.2);
+    `;
+    checkbox.onchange = (e) => {
+      if ((e.target as HTMLInputElement).checked) {
+        selectedMessageIds.push(msg.id);
+        messageDiv.style.background = '#e6f3ed';
+      } else {
+        selectedMessageIds = selectedMessageIds.filter(id => id !== msg.id);
+        messageDiv.style.background = '#f9f9f9';
+      }
+      console.log('Selected message IDs:', selectedMessageIds);
+    };
+
+    const messageContent = document.createElement('div');
+    messageContent.style.flexGrow = '1';
+    messageContent.style.fontSize = '14px';
+    messageContent.innerHTML = `<strong style="color: #1A5445;">${msg.role}:</strong> ${msg.content.substring(0, 150)}${msg.content.length > 150 ? '...' : ''}`;
+    
+    messageDiv.appendChild(checkbox);
+    messageDiv.appendChild(messageContent);
+    messagesContainer.appendChild(messageDiv);
+  });
+  modalContent.appendChild(messagesContainer);
+
+  // Title input
+  const titleLabel = document.createElement('label');
+  titleLabel.textContent = 'Context Title:';
+  titleLabel.htmlFor = 'context-title-input';
+  titleLabel.style.cssText = 'display: block; margin-bottom: 8px; font-weight: bold;';
+  modalContent.appendChild(titleLabel);
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'context-title-input';
+  titleInput.placeholder = 'e.g., My AI Conversation Summary';
+  titleInput.value = `ChatSeed Context ${new Date().toLocaleString()}`; // Default title
+  titleInput.style.cssText = `
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+  `;
+  modalContent.appendChild(titleInput);
+
+  // Tags input
+  const tagsLabel = document.createElement('label');
+  tagsLabel.textContent = 'Tags (comma-separated):';
+  tagsLabel.htmlFor = 'context-tags-input';
+  tagsLabel.style.cssText = 'display: block; margin-bottom: 8px; font-weight: bold;';
+  modalContent.appendChild(tagsLabel);
+
+  const tagsInput = document.createElement('input');
+  tagsInput.type = 'text';
+  tagsInput.id = 'context-tags-input';
+  tagsInput.placeholder = 'e.g., meeting-notes, important, projectX';
+  tagsInput.style.cssText = `
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+  `;
+  modalContent.appendChild(tagsInput);
+
+  // Save as file checkbox (for user-selected save location)
+  const saveAsFileCheckbox = document.createElement('input');
+  saveAsFileCheckbox.type = 'checkbox';
+  saveAsFileCheckbox.id = 'save-as-file-checkbox';
+  saveAsFileCheckbox.checked = true; // Pre-select
+  const saveAsFileLabel = document.createElement('label');
+  saveAsFileLabel.htmlFor = 'save-as-file-checkbox';
+  saveAsFileLabel.textContent = ' Save as file (choose location)';
+
+  const checkboxContainer = document.createElement('div');
+  checkboxContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #555;
+  `;
+  checkboxContainer.appendChild(saveAsFileCheckbox);
+  checkboxContainer.appendChild(saveAsFileLabel);
+  modalContent.appendChild(checkboxContainer);
 
   // Save button
-  const saveBtn = document.getElementById('save-context-btn');
-  saveBtn?.addEventListener('click', () => handleSaveContext(messages));
+  const saveButton = document.createElement('button');
+  saveButton.id = 'save-context-button';
+  saveButton.textContent = 'Save Context';
+  saveButton.style.cssText = `
+    background: #1A5445;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    margin-top: 10px;
+  `;
+  saveButton.onmouseover = (e) => (e.target as HTMLElement).style.backgroundColor = '#154135';
+  saveButton.onmouseout = (e) => (e.target as HTMLElement).style.backgroundColor = '#1A5445';
+  modalContent.appendChild(saveButton);
 
-  // Click outside to close
-  currentModal?.addEventListener('click', (e) => {
-    if (e.target === currentModal) {
-      closeSaveModal();
+  // Append modal to overlay, and overlay to body
+  overlay.appendChild(modalContent);
+  document.body.appendChild(overlay);
+  currentModal = overlay; // Store reference to the current modal
+
+  // Event listener for the save button
+  saveButton.addEventListener('click', async () => {
+    const titleInput = document.getElementById('context-title-input') as HTMLInputElement;
+    const tagsInput = document.getElementById('context-tags-input') as HTMLInputElement;
+    const saveAsFileChecked = (document.getElementById('save-as-file-checkbox') as HTMLInputElement)?.checked;
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      alert('Please provide a title for your context!');
+      return;
     }
+
+    if (selectedMessageIds.length === 0) {
+      alert('Please select at least one message to save!');
+      return;
+    }
+
+    const selectedMessages = allMessages.filter(msg => selectedMessageIds.includes(msg.id));
+    const tagsText = tagsInput?.value.trim() || '';
+    const tags = tagsText ? tagsText.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+
+    const contextBlock: ContextBlock = {
+      id: `context_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title,
+      body: formatMessagesForSaving(selectedMessages),
+      tags,
+      dateSaved: Date.now(),
+      platform: (detectCurrentPlatform() || 'chatgpt') as 'chatgpt' | 'gemini'
+    };
+
+    if (saveAsFileChecked) {
+      console.log('💾 Save as file checkbox checked. Preparing download...');
+      const fileContent = formatContextForExport(contextBlock);
+      const filename = `chatseed_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+
+      try {
+        await sendDataToBackgroundForDownload(fileContent, filename, 'text/plain'); // Use new function
+        alert(`Context "${title}" will be downloaded to your selected location.`);
+      } catch (error) {
+        console.error('Failed to initiate file download from save modal:', error);
+        alert('Failed to initiate file download. Please try again.');
+      }
+    } else {
+      console.log('💾 Saving to local storage...');
+      try {
+        await saveContextBlock(contextBlock);
+        alert(`Context "${title}" saved successfully!`);
+      } catch (error) {
+        console.error('Failed to save context to local storage:', error);
+        alert('Failed to save context to local storage. Please try again.');
+      }
+    }
+
+    closeSaveModal();
   });
-
-  // Escape key to close
-  document.addEventListener('keydown', handleEscapeKey);
-}
-
-function handleEscapeKey(e: KeyboardEvent): void {
-  if (e.key === 'Escape' && currentModal) {
-    closeSaveModal();
-  }
-}
-
-// PRESERVED: All original save logic unchanged
-async function handleSaveContext(allMessages: ChatMessage[]): Promise<void> {
-  console.log('💾 Starting save context process...');
-
-// ADD THIS DEBUGGING CODE HERE:
-const detectedPlatform = detectCurrentPlatform();
-console.log('🔍 Platform Detection:');
-console.log('  URL:', window.location.href);
-console.log('  Hostname:', window.location.hostname);  
-console.log('  Pathname:', window.location.pathname);
-console.log('  Detected:', detectedPlatform);
-console.log('  Final platform:', detectedPlatform || 'chatgpt');
-
-const titleInput = document.getElementById('context-title') as HTMLInputElement;
-// ... rest of the existing code continues
-  
-  const tagsInput = document.getElementById('context-tags') as HTMLInputElement;
-  
-  const title = titleInput?.value.trim();
-  if (!title) {
-    alert('Please enter a title for your context!');
-    return;
-  }
-
-  // Get selected messages
-  const checkboxes = document.querySelectorAll('#message-list input[type="checkbox"]:checked');
-  const selectedMessageIds = Array.from(checkboxes).map(cb => 
-    (cb as HTMLInputElement).getAttribute('data-message-id')
-  ).filter(Boolean) as string[];
-
-  if (selectedMessageIds.length === 0) {
-    alert('Please select at least one message to save!');
-    return;
-  }
-
-  const selectedMessages = allMessages.filter(msg => 
-    selectedMessageIds.includes(msg.id)
-  );
-
-  console.log('💾 Selected messages:', selectedMessages);
-
-  // Parse tags
-  const tagsText = tagsInput?.value.trim() || '';
-  const tags = tagsText ? tagsText.split(',').map(tag => tag.trim()).filter(Boolean) : [];
-
-  // Create context block with platform field
-  const contextBlock: ContextBlock = {
-    id: `context_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    title,
-    body: formatMessagesForSaving(selectedMessages),
-    tags,
-    dateSaved: Date.now(),
-    platform: (detectCurrentPlatform() || 'chatgpt') as 'chatgpt' | 'gemini'
-  };
-
-  console.log('💾 Created context block:', contextBlock);
-
-  try {
-    // Save to storage
-    await saveContextBlock(contextBlock);
-    
-    // Show success message
-    alert(`Context "${title}" saved successfully!`);
-    
-    // Close modal
-    closeSaveModal();
-    
-    console.log('💾 Save process completed successfully!');
-    
-  } catch (error) {
-    console.error('💾 Failed to save context:', error);
-    alert('Failed to save context. Please try again.');
-  }
 }
 
 function closeSaveModal(): void {
-  if (currentModal) {
-    document.removeEventListener('keydown', handleEscapeKey);
-    currentModal.remove();
+  if (currentModal && currentModal.parentNode) {
+    currentModal.parentNode.removeChild(currentModal);
     currentModal = null;
-    selectedMessages = [];
+    selectedMessageIds = []; // Clear selected messages
   }
 }

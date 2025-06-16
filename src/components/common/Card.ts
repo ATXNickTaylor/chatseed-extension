@@ -1,3 +1,4 @@
+// src/components/common/Card.ts
 import { ContextBlock } from '../../types';
 import { renderTag } from './Tag';
 
@@ -7,6 +8,8 @@ export function renderCard(
     onDelete: () => void;
     onFavorite: () => void;
     onResume: () => void;
+    // NEW: Add a new action for exporting a single context as a file
+    onExportAsFile: () => void;
   }
 ): HTMLElement {
   const card = document.createElement('div');
@@ -54,10 +57,16 @@ export function renderCard(
   const resumeBtn = createIconButton('icon-logo.png', 'Resume', actions.onResume);
   const favoriteBtn = createIconButton('icon-bookmark.png', 'Favorite', actions.onFavorite);
   const deleteBtn = createIconButton('icon-trash.png', 'Delete', actions.onDelete);
+  // NEW: Create the "Export as File" button
+  const exportFileBtn = createIconButton('icon-export-single.png', 'Export as File', actions.onExportAsFile);
+
 
   actionsBar.appendChild(resumeBtn);
   actionsBar.appendChild(favoriteBtn);
   actionsBar.appendChild(deleteBtn);
+  // NEW: Append the export file button to the actions bar
+  actionsBar.appendChild(exportFileBtn);
+
   card.appendChild(actionsBar);
 
   return card;
@@ -70,12 +79,15 @@ function createIconButton(iconFile: string, title: string, onClick: () => void):
   btn.style.padding = '2px';
 
   const img = document.createElement('img');
-  // FIXED: Use Chrome extension URL instead of relative path
-  img.src = chrome.runtime.getURL(iconFile);
+  img.src = chrome.runtime.getURL(`assets/img/${iconFile}`);
   img.alt = title;
-  img.className = 'icon-img';
+  img.style.width = '18px'; // Adjust size as needed
+  img.style.height = '18px'; // Adjust size as needed
 
   btn.appendChild(img);
-  btn.addEventListener('click', onClick);
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent card click event from firing
+    onClick();
+  });
   return btn;
 }
