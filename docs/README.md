@@ -2,13 +2,14 @@
 
 # ChatSeed - AI Context Manager
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen)](https://chromewebstore.google.com/detail/chatseed/odidbkfijbkniijmcmfnadibpcfhmgoo)
 [![GitHub Release](https://img.shields.io/badge/GitHub-Release-brightgreen)](https://github.com/ATXNickTaylor/chatseed-extension/releases)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/ATXNickTaylor/chatseed-extension/releases/tag/v1.2.2)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/ATXNickTaylor/chatseed-extension/releases/tag/v2.0.0)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange)](https://developer.chrome.com/docs/extensions/mv3/)
 
 ChatSeed enables you to save conversation contexts from AI platforms and seamlessly bridge them across different chat sessions. Works with both ChatGPT and Gemini - save from one, use in the other!
 
-**🎉 Version 2.0.0 Releasing - June 10, 2025**
+**🎉 Version 2.0.0 Now Live on Chrome Web Store!**
 
 ## 🌟 Features
 
@@ -81,7 +82,14 @@ We're continuously improving ChatSeed with everyday usage enhancements while mai
 
 ## 🚀 Installation
 
-### For Users
+### Option 1: Chrome Web Store (Recommended)
+
+1. **Visit the Chrome Web Store**: [ChatSeed Extension](https://chromewebstore.google.com/detail/chatseed/odidbkfijbkniijmcmfnadibpcfhmgoo)
+2. **Click "Add to Chrome"**
+3. **Confirm installation** when prompted
+4. **Start using immediately** - navigate to ChatGPT or Gemini to begin
+
+### Option 2: Manual Installation (Developer Mode)
 
 #### Step 1: Download ChatSeed
 1. Go to [ChatSeed Releases](https://github.com/ATXNickTaylor/chatseed-extension/releases)
@@ -386,6 +394,7 @@ Copyright (c) 2025 RevlytIQ LLC
 
 ## 📞 Support
 
+- **Chrome Web Store**: [ChatSeed Extension](https://chromewebstore.google.com/detail/chatseed/odidbkfijbkniijmcmfnadibpcfhmgoo)
 - **Issues**: [GitHub Issues](https://github.com/ATXNickTaylor/chatseed-extension/issues)
 - **Email**: [chatseed@revlytiq.io](mailto:chatseed@revlytiq.io)
 - **Website**: [https://revlytiq.io/ChatSeed](https://revlytiq.io/ChatSeed)
@@ -431,7 +440,7 @@ Copyright (c) 2025 RevlytIQ LLC
 #### Installation Problems
 - **Extension not appearing after installation**: 
   - Refresh the `chrome://extensions/` page
-  - Ensure "Developer mode" is enabled
+  - Ensure "Developer mode" is enabled (only for manual installation)
   - Try disabling and re-enabling the extension
 
 #### Functionality Issues  
@@ -461,7 +470,7 @@ Copyright (c) 2025 RevlytIQ LLC
 #### Chrome-Specific Issues
 - **Extension disabled automatically**: 
   - Chrome may disable unpacked extensions - re-enable in `chrome://extensions/`
-  - Consider using the official Chrome Web Store version when available
+  - Use the Chrome Web Store version for automatic updates
 
 ### Getting Help
 If you encounter issues not covered here:
@@ -542,7 +551,10 @@ A: Currently, ChatSeed doesn't support importing. You can manually create contex
 - **No cookies**: No tracking cookies or browser fingerprinting
 - **Privacy by design**: Built with privacy as the core principle
 
-### v2.0.0 (June 10, 2025)
+## 📈 Version History
+
+### v2.0.0 (January 15, 2025) - Current
+- **Chrome Web Store Release**: Now available on Chrome Web Store
 - **Multi-Platform Support**: Added full Gemini compatibility
 - **Cross-Platform Context Sharing**: Save from ChatGPT, use in Gemini (and vice versa)
 - **Enhanced Platform Detection**: Automatic platform identification with visual indicators
