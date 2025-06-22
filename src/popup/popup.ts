@@ -8,8 +8,9 @@ import {
   getContextStats,
   getRecentContexts,
   getFavoriteContexts,
-  exportAllContexts
+  // exportAllContexts //
 } from '../utils/storage';
+import { exportAllContextsToFile } from '../utils/file-management/fileSaver';
 import { ContextBlock, NavigationState } from '../types';
 
 let allContexts: ContextBlock[] = [];
@@ -74,21 +75,20 @@ function setupEventListeners(): void {
   // Replaced with:
   exportAllBtn?.addEventListener('click', async () => {
     console.log('📤 Export All Contexts button clicked');
-    if (allContexts.length === 0) {
-      alert('No contexts to export!');
-      return;
-    }
-    try {
-      // NEW: Send message to background script for bulk export
-      await chrome.runtime.sendMessage({
-        action: 'INITIATE_DOWNLOAD',
-        payload: { contexts: allContexts }
-      });
-      alert('All contexts will be downloaded to your selected location.');
-    } catch (error) {
-      console.error('Failed to export all contexts:', error);
-      alert('Failed to initiate bulk download. Please check console for details.');
-    }
+      if (allContexts.length === 0) { // Keep this check!
+        alert('No contexts to export!');
+        return;
+      }
+      try {
+        // Use the exportAllContextsToFile function, which handles
+        // formatting the contexts into JSON and sending the correct
+        // download request to the background script.
+        await exportAllContextsToFile(allContexts); // <--- NEW, CORRECTED CALL
+        alert('All contexts will be downloaded to your selected location!');
+      } catch (error) {
+        console.error('Error exporting all contexts:', error);
+        alert('Failed to initiate bulk download. Please check console for details.');
+      }
   });
   // MODIFIED LOGIC END
 
