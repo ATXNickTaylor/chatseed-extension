@@ -1,15 +1,20 @@
 {
   "manifest_version": 3,
   "name": "ChatSeed",
-  "version": "2.0.0",
-  "description": "Save and reuse AI conversations interchangeably with privacy-first context management. Zero data collection, local storage only.",
+  "version": "3.0.0",
+  "description": "Cross-platform AI chat and text saving with total privacy—no cloud, no tracking.",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
   },
-  "homepage_url": "https://github.com/YOUR-USERNAME/chatseed-extension",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "homepage_url": "https://revlytiq.io/ChatSeed",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "downloads",
+    "contextMenus"
+  ],
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
@@ -22,8 +27,18 @@
         "https://chatgpt.com/*",
         "https://gemini.google.com/*"
       ],
-      "js": ["contentScript.bundle.js"],
+      "js": [
+        "contentScript.bundle.js"
+      ],
       "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "contextMenuContent.bundle.js"
+      ]
     }
   ],
   "action": {
@@ -54,7 +69,19 @@
         "icon-flag.png",
         "icon-searchglass.png",
         "icon-gemini.png",
-        "icon-gpt.png"
+        "icon-gpt.png",
+        "icon-gpt-transp.png",
+        "icon-export-single.png",
+        "icon-edit.png",
+        "icon-emptystate.png",
+        "icon-export.png",
+        "icon-favorite.png",
+        "icon-filter.png",
+        "icon-insert.png",
+        "icon-persona-analyst.png",
+        "icon-persona-executive.png",
+        "icon-persona-standard.png",
+        "icon-persona-teammate.png"
       ],
       "matches": [
         "https://chat.openai.com/*",

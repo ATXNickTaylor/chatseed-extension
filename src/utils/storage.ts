@@ -12,21 +12,21 @@ export const StorageKeys = {
 export async function saveContextBlock(contextBlock: ContextBlock): Promise<void> {
   try {
     console.log('💾 Saving context block:', contextBlock);
-    
+
     // Ensure platform is set
     if (!contextBlock.platform) {
       const currentPlatform = detectCurrentPlatform();
       contextBlock.platform = (currentPlatform || 'chatgpt') as 'chatgpt' | 'gemini';
     }
-    
+
     const existing = await getContextBlocks();
     console.log('💾 Existing contexts before save:', existing);
     const updated = [...existing, contextBlock];
     console.log('💾 Updated contexts to save:', updated);
-    
+
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
     console.log('💾 Context block saved successfully!');
-    
+
     // Verify the save worked
     const verification = await chrome.storage.local.get([StorageKeys.CONTEXT_BLOCKS]);
     console.log('💾 Verification - contexts in storage:', verification[StorageKeys.CONTEXT_BLOCKS]);
@@ -41,18 +41,18 @@ export async function getContextBlocks(): Promise<ContextBlock[]> {
     console.log('📖 Getting context blocks from storage...');
     const result = await chrome.storage.local.get([StorageKeys.CONTEXT_BLOCKS]);
     console.log('📖 Raw storage result:', result);
-    
+
     const contexts = result[StorageKeys.CONTEXT_BLOCKS] || [];
-    
+
     // Migrate legacy contexts without platform field
     const migratedContexts = contexts.map((context: ContextBlock) => ({
       ...context,
       platform: context.platform || 'chatgpt'
     }));
-    
+
     console.log('📖 Parsed contexts:', migratedContexts);
     console.log('📖 Number of contexts found:', migratedContexts.length);
-    
+
     return migratedContexts;
   } catch (error) {
     console.error('📖 Failed to get context blocks:', error);
@@ -77,7 +77,7 @@ export async function deleteContextBlock(id: string): Promise<void> {
     console.log('🗑️ Existing contexts before delete:', existing);
     const updated = existing.filter(block => block.id !== id);
     console.log('🗑️ Updated contexts after delete:', updated);
-    
+
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
     console.log('🗑️ Context block deleted successfully!');
   } catch (error) {
@@ -89,7 +89,7 @@ export async function deleteContextBlock(id: string): Promise<void> {
 export async function updateContextBlock(id: string, updates: Partial<ContextBlock>): Promise<void> {
   try {
     const existing = await getContextBlocks();
-    const updated = existing.map(block => 
+    const updated = existing.map(block =>
       block.id === id ? { ...block, ...updates } : block
     );
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
@@ -102,7 +102,7 @@ export async function updateContextBlock(id: string, updates: Partial<ContextBlo
 export async function toggleFavorite(id: string): Promise<void> {
   try {
     const existing = await getContextBlocks();
-    const updated = existing.map(block => 
+    const updated = existing.map(block =>
       block.id === id ? { ...block, isFavorite: !block.isFavorite } : block
     );
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
@@ -115,7 +115,7 @@ export async function toggleFavorite(id: string): Promise<void> {
 export async function markAsUsed(id: string): Promise<void> {
   try {
     const existing = await getContextBlocks();
-    const updated = existing.map(block => 
+    const updated = existing.map(block =>
       block.id === id ? { ...block, lastUsed: Date.now() } : block
     );
     await chrome.storage.local.set({ [StorageKeys.CONTEXT_BLOCKS]: updated });
@@ -130,10 +130,10 @@ export async function getContextStats(): Promise<ContextStats> {
     const contexts = await getContextBlocks();
     const now = Date.now();
     const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
-    
+
     const allTags = contexts.flatMap(context => context.tags);
     const uniqueTags = Array.from(new Set(allTags));
-    
+
     return {
       total: contexts.length,
       recent: contexts.filter(context => context.dateSaved > oneWeekAgo).length,

@@ -3,6 +3,7 @@ import { openSaveModal } from './saveModal';
 import { detectCurrentPlatform, isSupportedPlatform, getPlatformDisplayName } from '../utils/platformDetection';
 import { checkAndRunMigrations } from '../utils/migration';
 import { DOMHelper } from '../utils/domUtils';
+import { initializeCommandCenter, cleanupCommandCenter } from './commandCenter';
 
 // This script runs on every supported AI platform page load
 console.log('ChatSeed: Content script loaded - v1.3.0 Multi-Platform');
@@ -42,11 +43,11 @@ function waitForChatInterface(): Promise<void> {
   return new Promise((resolve) => {
     const checkForChat = () => {
       // Updated selectors for current AI interfaces (expanded from original)
-      const chatContainer = document.querySelector('main') || 
-                           document.querySelector('#main') ||
-                           document.querySelector('body > div') ||
-                           document.querySelector('[id*="app"]');
-      
+      const chatContainer = document.querySelector('main') ||
+        document.querySelector('#main') ||
+        document.querySelector('body > div') ||
+        document.querySelector('[id*="app"]');
+
       if (chatContainer) {
         console.log(`${getPlatformDisplayName(currentPlatform!)} interface found:`, chatContainer);
         resolve();
@@ -100,7 +101,7 @@ function createFloatingToolbar(): void {
     button.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
     button.style.filter = 'brightness(1.1)';
   });
-  
+
   button.addEventListener('mouseleave', () => {
     button.style.transform = 'scale(1) translateY(0)';
     button.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
@@ -141,16 +142,16 @@ async function initializeExtension(): Promise<void> {
 
     await waitForPageLoad();
     await waitForChatInterface();
-    
+
     // Create and inject the floating toolbar
-    createFloatingToolbar();
+    initializeCommandCenter();
     console.log(`ChatSeed: Toolbar injected successfully for ${getPlatformDisplayName(currentPlatform!)}`);
-    
+
     // Set up observer for dynamic content changes
     setupMutationObserver();
-    
+
     console.log('ChatSeed: Initialization complete!');
-    
+
   } catch (error) {
     console.error('ChatSeed: Failed to initialize:', error);
   }
@@ -166,10 +167,10 @@ function setupMutationObserver(): void {
           if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
             // Look for new message containers (EXPANDED from original)
-            if (element.matches('[data-message-id]') || 
-                element.querySelector('[data-message-id]') ||
-                element.matches('.user-query') ||
-                element.matches('.markdown')) {
+            if (element.matches('[data-message-id]') ||
+              element.querySelector('[data-message-id]') ||
+              element.matches('.user-query') ||
+              element.matches('.markdown')) {
               console.log('New message detected');
               // Could trigger UI updates here if needed
             }
@@ -191,7 +192,7 @@ function setupMutationObserver(): void {
 // Listen for messages from popup to insert context
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Content script received message:', message);
-  
+
   if (message.action === 'INSERT_CONTEXT') {
     try {
       const result = insertContextIntoChat(message.context);
@@ -203,7 +204,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: errorMessage });
     }
   }
-  
+
   if (message.action === 'SUMMARIZE_CHAT') {
     try {
       const result = insertSummarizePrompt(
@@ -241,13 +242,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: errorMessage });
     }
   }
-  
+
   return true; // Keep message channel open for async response
 });
 
-function insertContextIntoChat(context: { title: string; body: string }): boolean {
+function insertContextIntoChat(context: { title: string; body: string; contextType?: string }): boolean {
   console.log('Attempting to insert context:', context.title);
-  
+
   // Use DOMHelper to find platform-specific input element
   const domHelper = new DOMHelper();
   const textarea = domHelper.getInputElement();
@@ -258,46 +259,55 @@ function insertContextIntoChat(context: { title: string; body: string }): boolea
     return false;
   }
 
-  // Prepare context text with memory update instruction
-  const contextText = `Please update your memory with the following information and do not address me directly:
+  // --- NEW LOGIC: Build the text to insert based on contextType ---
+  const trimmedBody = context.body.replace(/^\s+/, '');
+
+  let contextText: string;
+  if (context.contextType === 'prompt') {
+    // For prompts, insert only the trimmed body
+    contextText = trimmedBody;
+  } else {
+    // For contexts (or if contextType is missing), use the instructional template
+    contextText = `Please update your memory with the following information and do not address me directly:
 
 [Saved Context: ${context.title}]
 
-${context.body}`;
-  
+${trimmedBody}`;
+  }
+
   try {
     if (textarea.tagName.toLowerCase() === 'textarea') {
       const textareaEl = textarea as HTMLTextAreaElement;
       const currentValue = textareaEl.value.trim();
-      
+
       // Only add spacing if there's existing content
       const newValue = currentValue ? `${currentValue}\n\n${contextText}` : contextText;
-      
+
       textareaEl.value = newValue;
-      
+
       // Trigger events
       textareaEl.dispatchEvent(new Event('input', { bubbles: true }));
       textareaEl.dispatchEvent(new Event('change', { bubbles: true }));
       textareaEl.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textareaEl.focus();
       textareaEl.setSelectionRange(textareaEl.value.length, textareaEl.value.length);
-      
+
     } else if (textarea.contentEditable === 'true') {
       // For contenteditable, preserve more formatting
       const currentContent = textarea.innerHTML.trim();
       const formattedContext = convertTextToHtml(contextText);
-      
+
       // Only add spacing if there's existing content
-      const newContent = currentContent ? 
-        `${currentContent}<br><br>${formattedContext}` : 
+      const newContent = currentContent ?
+        `${currentContent}<br><br>${formattedContext}` :
         formattedContext;
-      
+
       textarea.innerHTML = newContent;
-      
+
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textarea.focus();
       const range = document.createRange();
       const selection = window.getSelection();
@@ -306,10 +316,10 @@ ${context.body}`;
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
-    
+
     console.log(`Successfully inserted context "${context.title}" into ${getPlatformDisplayName(currentPlatform!)} input`);
     return true;
-    
+
   } catch (error) {
     console.error('Error during insertion:', error);
     return false;
@@ -368,7 +378,7 @@ function getSummarizePrompt(summaryType: string, persona: string = 'default'): s
 
   // Combine persona tone with base content and trim any whitespace
   const result = `Without addressing me directly, ${personaPrefix}${baseContent}${personaSuffix}`;
-  
+
   // Ensure no leading/trailing whitespace in the final prompt
   return result.trim();
 }
@@ -376,7 +386,7 @@ function getSummarizePrompt(summaryType: string, persona: string = 'default'): s
 // Enhanced insertSummarizePrompt with better whitespace handling (PRESERVED ALL ORIGINAL LOGIC)
 function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 'default'): boolean {
   console.log('Attempting to insert summarize prompt with type:', summaryType, 'and persona:', persona);
-  
+
   // Use DOMHelper to find platform-specific input element
   const domHelper = new DOMHelper();
   const textarea = domHelper.getInputElement();
@@ -388,30 +398,30 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
   }
 
   const summarizePrompt = getSummarizePrompt(summaryType, persona);
-  
+
   // Debug: Log the exact prompt being generated
   console.log('Generated summarize prompt:', JSON.stringify(summarizePrompt));
 
   try {
     if (textarea.tagName.toLowerCase() === 'textarea') {
       const textareaEl = textarea as HTMLTextAreaElement;
-      
+
       // Get current value and handle whitespace more aggressively
       let currentValue = textareaEl.value;
-      
+
       // Debug: Log current value
       console.log('Current textarea value:', JSON.stringify(currentValue));
-      
+
       // Remove all trailing whitespace from current content
       currentValue = currentValue.replace(/\s+$/, '');
-      
+
       // Remove any leading whitespace from the prompt
       const cleanPrompt = summarizePrompt.replace(/^\s+/, '');
-      
+
       // Debug: Log cleaned values
       console.log('Cleaned current value:', JSON.stringify(currentValue));
       console.log('Cleaned prompt:', JSON.stringify(cleanPrompt));
-      
+
       // Build new value with proper spacing
       let newValue;
       if (currentValue.length > 0) {
@@ -421,7 +431,7 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
         // If no existing content, just use the clean prompt
         newValue = cleanPrompt;
       }
-      
+
       // Debug: Log final value
       console.log('Final textarea value:', JSON.stringify(newValue));
 
@@ -438,17 +448,17 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
     } else if (textarea.contentEditable === 'true') {
       // Handle contenteditable (AI platform's current implementation)
       let currentContent = textarea.innerHTML;
-      
+
       // Debug: Log current content
       console.log('Current contenteditable content:', JSON.stringify(currentContent));
-      
+
       // Check if content is just the placeholder
-      const isPlaceholderOnly = currentContent.includes('data-placeholder') && 
-                              currentContent.includes('class="placeholder"') &&
-                              !currentContent.replace(/<[^>]*>/g, '').trim();
-      
+      const isPlaceholderOnly = currentContent.includes('data-placeholder') &&
+        currentContent.includes('class="placeholder"') &&
+        !currentContent.replace(/<[^>]*>/g, '').trim();
+
       console.log('Is placeholder only:', isPlaceholderOnly);
-      
+
       let cleanedContent;
       if (isPlaceholderOnly) {
         // If it's just the placeholder, start fresh
@@ -459,14 +469,14 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
         cleanedContent = currentContent.replace(/(<br\s*\/?>|\s)+$/, '');
         console.log('Cleaned current content:', JSON.stringify(cleanedContent));
       }
-      
+
       // Convert prompt to HTML and remove leading whitespace
       let formattedPrompt = convertTextToHtml(summarizePrompt);
       formattedPrompt = formattedPrompt.replace(/^(<br\s*\/?>|\s)+/, '');
-      
+
       // Debug: Log formatted prompt
       console.log('Formatted prompt:', JSON.stringify(formattedPrompt));
-      
+
       // Build new content with proper spacing
       let newContent;
       if (cleanedContent.length > 0) {
@@ -474,7 +484,7 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
       } else {
         newContent = formattedPrompt;
       }
-      
+
       // Debug: Log final content
       console.log('Final contenteditable content:', JSON.stringify(newContent));
 
@@ -491,10 +501,10 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
-    
+
     console.log(`Successfully inserted ${summaryType} summarize prompt with ${persona} persona into ${getPlatformDisplayName(currentPlatform!)} input`);
     return true;
-    
+
   } catch (error) {
     console.error('Error during summarize prompt insertion:', error);
     return false;
@@ -503,7 +513,7 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
 
 function insertContextSummaryPrompt(context: { title: string; body: string }): boolean {
   console.log('Attempting to insert context summary prompt for:', context.title);
-  
+
   // Use DOMHelper to find platform-specific input element
   const domHelper = new DOMHelper();
   const textarea = domHelper.getInputElement();
@@ -526,32 +536,32 @@ Summarize the key points, main topics, and important information from this conte
     if (textarea.tagName.toLowerCase() === 'textarea') {
       const textareaEl = textarea as HTMLTextAreaElement;
       const currentValue = textareaEl.value.trim();
-      
+
       const newValue = currentValue ? `${currentValue}\n\n${contextSummaryPrompt}` : contextSummaryPrompt;
-      
+
       textareaEl.value = newValue;
-      
+
       // Trigger events
       textareaEl.dispatchEvent(new Event('input', { bubbles: true }));
       textareaEl.dispatchEvent(new Event('change', { bubbles: true }));
       textareaEl.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textareaEl.focus();
       textareaEl.setSelectionRange(textareaEl.value.length, textareaEl.value.length);
-      
+
     } else if (textarea.contentEditable === 'true') {
       const currentContent = textarea.innerHTML.trim();
       const formattedPrompt = convertTextToHtml(contextSummaryPrompt);
-      
-      const newContent = currentContent ? 
-        `${currentContent}<br><br>${formattedPrompt}` : 
+
+      const newContent = currentContent ?
+        `${currentContent}<br><br>${formattedPrompt}` :
         formattedPrompt;
-      
+
       textarea.innerHTML = newContent;
-      
+
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-      
+
       textarea.focus();
       const range = document.createRange();
       const selection = window.getSelection();
@@ -560,10 +570,10 @@ Summarize the key points, main topics, and important information from this conte
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
-    
+
     console.log(`Successfully inserted context summary prompt for "${context.title}" into ${getPlatformDisplayName(currentPlatform!)} input`);
     return true;
-    
+
   } catch (error) {
     console.error('Error during context summary prompt insertion:', error);
     return false;
@@ -571,8 +581,9 @@ Summarize the key points, main topics, and important information from this conte
 }
 
 function convertTextToHtml(text: string): string {
+  // Do NOT insert <br> for newlines; just keep markdown formatting
   return text
-    .replace(/\n/g, '<br>')
+    // .replace(/\n/g, '<br>')   // REMOVE THIS LINE
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code>$1</code>')

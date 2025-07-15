@@ -39,6 +39,7 @@ var options = {
     popup: path.join(__dirname, 'src', 'popup', 'popup.ts'),
     contentScript: path.join(__dirname, 'src', 'content', 'content.ts'),
     background: path.join(__dirname, 'src', 'background', 'background.ts'),
+    contextMenuContent: path.join(__dirname, 'src', 'content', 'contextMenuContent.ts'),
   },
   output: {
     filename: '[name].bundle.js',
@@ -55,6 +56,10 @@ var options = {
         use: [
           {
             loader: 'style-loader',
+            options: {
+              // Ensure styles are injected immediately for extensions
+              injectType: 'singletonStyleTag',
+            },
           },
           {
             loader: 'css-loader',
@@ -169,11 +174,6 @@ var options = {
           force: true,
         },
         {
-          from: 'src/assets/img/icon-plus.png',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-        {
           from: 'src/assets/img/icon-searchglass.png',
           to: path.join(__dirname, 'build'),
           force: true,
@@ -209,27 +209,6 @@ var options = {
           to: path.join(__dirname, 'build'),
           force: true,
         },
-        // v1.2.0 NEW ASSETS: Persona icons
-        {
-          from: 'src/assets/img/icon-persona-executive.png',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-        {
-          from: 'src/assets/img/icon-persona-teammate.png',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-        {
-          from: 'src/assets/img/icon-persona-analyst.png',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-        {
-          from: 'src/assets/img/icon-persona-standard.png',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
         // v1.2.0 NEW ASSETS: Individual context action icons
         {
           from: 'src/assets/img/icon-insert.png',
@@ -258,7 +237,48 @@ var options = {
           force: true,
         },
         {
+          from: 'src/assets/img/icon-gpt-transp.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
           from: 'src/assets/img/icon-gemini.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        // CSS FILES: Ensure styles are available as static files for Chrome extension popup
+        {
+          from: 'src/popup/styles.css',
+          to: path.join(__dirname, 'build', 'styles.css'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-emptystate.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-plus.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-analyst.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-executive.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-standard.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/img/icon-persona-teammate.png',
           to: path.join(__dirname, 'build'),
           force: true,
         },

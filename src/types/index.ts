@@ -8,7 +8,8 @@ export interface ContextBlock {
   dateSaved: number;
   isFavorite?: boolean;
   lastUsed?: number;
-  platform: 'chatgpt' | 'gemini'; // NEW FIELD
+  platform: 'chatgpt' | 'gemini' | 'external'; // NEW FIELD
+  contextType?: 'context' | 'prompt' | 'highlighted'; // <-- Add this line
 }
 
 export interface ChatMessage {

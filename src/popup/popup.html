@@ -1,156 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChatSeed</title>
+  <title>Extension Popup</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html,
+    body {
+      width: 500px;
+      height: 300px;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+    }
+  </style>
 </head>
+
 <body>
-  <div class="popup-container">
-    <!-- Header Banner -->
-    <div class="header-banner">
-      <div class="banner-content">
-        <img src="../assets/img/icon-48.png" alt="ChatSeed" class="banner-icon" />
-        <div class="banner-text">
-          <h1>ChatSeed</h1>
-          <p>Save and manage ChatGPT contexts</p>
-        </div>
-      </div>
-      <div class="banner-actions">
-        <button id="export-all-btn" class="banner-btn" title="Export All Contexts">
-          <img src="../assets/img/icon-export.png" alt="Export All" />
-        </button>
-        <!-- SIMPLIFIED: Plus button goes directly to persona selection -->
-        <button id="plus-btn" class="banner-btn" title="Summarize Current Chat">
-          <img src="../assets/img/icon-plus.png" alt="Summarize" />
-        </button>
+  <div class="popup-header">
+    <div class="header-content">
+      <div class="header-logo">
+        <img src="../assets/img/icon-logo.png" alt="ChatSeed" style="width: 40px; height: 40px;">
       </div>
     </div>
-
-    <!-- Persona Selection Section -->
-    <div id="persona-section" class="persona-section">
-      <div class="persona-header">
-        <h3>Summarize Your Current Chat</h3>
-        <button id="persona-close-btn" class="persona-close-btn">×</button>
-      </div>
-      <div class="persona-grid">
-        <div class="persona-option" data-persona="executive">
-          <img src="../assets/img/icon-persona-executive.png" alt="Executive" />
-          <div class="persona-info">
-            <div class="persona-name">Executive</div>
-            <div class="persona-desc">Clean, high-level format for stakeholders</div>
-          </div>
-        </div>
-        <div class="persona-option" data-persona="teammate">
-          <img src="../assets/img/icon-persona-teammate.png" alt="Teammate" />
-          <div class="persona-info">
-            <div class="persona-name">Teammate</div>
-            <div class="persona-desc">Conversational tone for collaboration</div>
-          </div>
-        </div>
-        <div class="persona-option" data-persona="analyst">
-          <img src="../assets/img/icon-persona-analyst.png" alt="Analyst" />
-          <div class="persona-info">
-            <div class="persona-name">Analyst</div>
-            <div class="persona-desc">Structured, logical with actionable insights</div>
-          </div>
-        </div>
-        <div class="persona-option" data-persona="default">
-          <img src="../assets/img/icon-persona-standard.png" alt="Standard" />
-          <div class="persona-info">
-            <div class="persona-name">Standard</div>
-            <div class="persona-desc">Default summarization style</div>
-          </div>
-        </div>
-      </div>
+    <div class="header-center">
+      <span class="toggle-label">Contexts</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-radio" />
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Prompts</span>
     </div>
-
-    <!-- Search Section -->
-    <div class="search-section">
-      <div class="search-container">
-        <div class="search-input-wrapper">
-          <img src="../assets/img/icon-searchglass.png" alt="Search" class="search-icon" />
-          <input
-            type="text"
-            id="search-input"
-            class="search-input"
-            placeholder="Search contexts..."
-          />
-        </div>
-        <button id="filter-toggle-btn" class="filter-toggle-btn" title="Toggle Filters">
-          <img src="../assets/img/icon-filter.png" alt="Filter" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Filter Section -->
-    <div id="filter-section" class="filter-section">
-      <div class="filter-row">
-        <input
-          type="text"
-          id="filter-keyword"
-          class="filter-input"
-          placeholder="Filter by keyword..."
-        />
-        <input
-          type="text"
-          id="filter-tag"
-          class="filter-input"
-          placeholder="Filter by tag..."
-        />
-      </div>
-      <div class="filter-row">
-        <select id="filter-date" class="filter-select">
-          <option value="">All dates</option>
-          <option value="today">Today</option>
-          <option value="week">This week</option>
-          <option value="month">This month</option>
-          <option value="older">Older</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Navigation -->
-    <div class="navigation">
-      <div class="nav-list">
-        <div class="nav-item active" data-nav="all">
-          <img src="../assets/img/icon-team.png" alt="All" />
-          All
-        </div>
-        <div class="nav-item" data-nav="recent">
-          <img src="../assets/img/icon-account.png" alt="Recent" />
-          Recent
-        </div>
-        <div class="nav-item" data-nav="favorites">
-          <img src="../assets/img/icon-bookmark.png" alt="Favorites" />
-          Favorites
-        </div>
-        <div class="nav-item" data-nav="tags">
-          <img src="../assets/img/icon-flag.png" alt="Tags" />
-          Tags
-        </div>
-      </div>
-    </div>
-
-    <!-- Green Divider -->
-    <div class="green-divider"></div>
-
-    <!-- Stats Section -->
-    <div class="stats-section">
-      <div id="stats-count" class="stats-count">0</div>
-      <div id="stats-title" class="stats-title">No saved contexts</div>
-    </div>
-
-    <!-- Content Area -->
-    <div class="content-area">
-      <div id="contexts-grid" class="contexts-grid">
-        <!-- Contexts will be dynamically populated here -->
-        <div class="empty-state">
-          <div class="empty-icon">📝</div>
-          <div>No saved contexts found. Visit ChatGPT and save your first context!</div>
-        </div>
-      </div>
+    <div class="header-actions">
+      <!-- Help Icon -->
+      <span id="help-icon" class="help-icon" tabindex="0" aria-label="Help">?</span>
+      <button id="filter-menu-btn" class="filter-menu-btn" aria-label="Filter">
+        <img src="../assets/img/icon-filter.png" alt="Filter">
+      </button>
     </div>
   </div>
+  <div class="popup-body"></div>
+  <!-- Modal for help message -->
+  <div id="help-modal" class="help-modal" style="display: none;">
+    <div class="help-modal-content">
+      Change your storage location via the organize menu in the command center.
+    </div>
+  </div>
+  <div id="filter-menu" class="filter-menu-modal" style="display: none;">
+    <!-- Filter controls will be rendered here by JS -->
+  </div>
 </body>
+
 </html>
