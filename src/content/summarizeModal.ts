@@ -86,15 +86,9 @@ export function openSummarizeModal(): void {
  */
 export function closeSummarizeModal(): void {
   if (currentSummarizeModal) {
-    const overlay = currentSummarizeModal.querySelector('.summarize-modal-overlay') as HTMLElement;
-    overlay.classList.remove('open');
-
-    setTimeout(() => {
-      if (currentSummarizeModal && currentSummarizeModal.parentNode) {
-        currentSummarizeModal.parentNode.removeChild(currentSummarizeModal);
-      }
-      currentSummarizeModal = null;
-    }, 300);
+    document.removeEventListener('keydown', handleEscapeKey);
+    currentSummarizeModal.remove();
+    currentSummarizeModal = null;
   }
 }
 
@@ -716,6 +710,75 @@ function getSummarizeModalCSS(): string {
       background: #e9ecef;
       color: #495057;
     }
+
+    .buy-coffee-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #ff6b35;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(255, 107, 53, 0.1);
+      border: 1px solid rgba(255, 107, 53, 0.2);
+      transition: all 0.2s ease;
+      position: relative;
+      margin-top: 8px;
+    }
+    .buy-coffee-link:hover {
+      background: rgba(255, 107, 53, 0.15);
+      border-color: rgba(255, 107, 53, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+    }
+    .buy-coffee-link:active {
+      transform: translateY(0);
+    }
+    .buy-coffee-link svg {
+      flex-shrink: 0;
+    }
+    .buy-coffee-link::before {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 10001;
+      margin-bottom: 8px;
+      width: auto;
+      min-width: 120px;
+      text-align: center;
+      line-height: 1.3;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .buy-coffee-link::after {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #333;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      margin-bottom: 4px;
+    }
+    .buy-coffee-link:hover::before,
+    .buy-coffee-link:hover::after {
+      opacity: 1;
+    }
   `;
 }
 
@@ -723,20 +786,28 @@ function getSummarizeModalCSS(): string {
  * Attaches event listeners to the summarize modal
  */
 function attachSummarizeModalEventListeners(container: HTMLElement): void {
-  const overlay = container.querySelector('.summarize-modal-overlay') as HTMLElement;
+  // Close button (X)
   const closeBtn = container.querySelector('#summarize-modal-close') as HTMLElement;
+  closeBtn?.addEventListener('click', closeSummarizeModal);
+
+  // Cancel button
   const closeFooterBtn = container.querySelector('#close-summarize-modal') as HTMLElement;
-  const customBtn = container.querySelector('#insert-custom-btn') as HTMLElement;
-  const customInput = container.querySelector('#custom-prompt-input') as HTMLTextAreaElement;
+  closeFooterBtn?.addEventListener('click', closeSummarizeModal);
 
-  // Close modal on X or footer button
-  closeBtn.onclick = closeSummarizeModal;
-  closeFooterBtn.onclick = closeSummarizeModal;
+  // Marketplace button
+  const marketplaceBtn = container.querySelector('#marketplace-btn') as HTMLElement;
+  marketplaceBtn?.addEventListener('click', showMarketplacePopup);
 
-  // Close on overlay click
-  overlay.onclick = (e) => {
-    if (e.target === overlay) closeSummarizeModal();
-  };
+  // Click outside to close
+  const overlay = container.querySelector('.summarize-modal-overlay') as HTMLElement;
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeSummarizeModal();
+    }
+  });
+
+  // Escape key to close
+  document.addEventListener('keydown', handleEscapeKey);
 
   // Insert summary when clicking a card
   container.querySelectorAll('.summarize-option').forEach(option => {
@@ -755,8 +826,10 @@ function attachSummarizeModalEventListeners(container: HTMLElement): void {
   });
 
   // Insert custom summary on button click
-  customBtn.onclick = () => {
-    const customPrompt = customInput.value.trim();
+  const customBtn = container.querySelector('#insert-custom-btn') as HTMLElement;
+  const customInput = container.querySelector('#custom-prompt-input') as HTMLTextAreaElement;
+  customBtn?.addEventListener('click', () => {
+    const customPrompt = customInput?.value.trim();
     const noFormalAddress = (container.querySelector('#no-formal-address') as HTMLInputElement)?.checked;
     if (customPrompt) {
       let finalPrompt = customPrompt;
@@ -768,24 +841,21 @@ function attachSummarizeModalEventListeners(container: HTMLElement): void {
     } else {
       showNotification('Please enter a custom prompt', 'error');
     }
-  };
-
-  // Insert custom summary on Enter in textarea
-  customInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      customBtn.click();
-    }
   });
 
-  // Close on Escape key
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      closeSummarizeModal();
-      document.removeEventListener('keydown', handleEscape);
+  // Insert custom summary on Enter in textarea
+  customInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      customBtn?.click();
     }
-  };
-  document.addEventListener('keydown', handleEscape);
+  });
+}
+
+function handleEscapeKey(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && currentSummarizeModal) {
+    closeSummarizeModal();
+  }
 }
 
 /**
@@ -1140,7 +1210,19 @@ function showMarketplacePopup(): void {
   popup.className = 'marketplace-popup';
   popup.innerHTML = `
     <h4>Prompt Marketplace</h4>
-    <p>Prompt Marketplace will be in a future update</p>
+    <p>Prompt Marketplace will be in a future update. Buy us coffee to expedite this feature!</p>
+    <div class="support-section" style="margin-bottom: 16px;">
+      <a href="https://buymeacoffee.com/chatseed" target="_blank" class="buy-coffee-link" id="buy-coffee-link" title="Contribute to ChatSeed">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1" stroke="#ff6b35" stroke-width="2"/>
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" stroke="#ff6b35" stroke-width="2"/>
+          <line x1="6" y1="1" x2="6" y2="4" stroke="#ff6b35" stroke-width="2"/>
+          <line x1="10" y1="1" x2="10" y2="4" stroke="#ff6b35" stroke-width="2"/>
+          <line x1="14" y1="1" x2="14" y2="4" stroke="#ff6b35" stroke-width="2"/>
+        </svg>
+        <span>Buy us a coffee</span>
+      </a>
+    </div>
     <button class="popup-close">OK</button>
   `;
 
