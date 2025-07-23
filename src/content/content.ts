@@ -205,6 +205,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 
+  if (message.action === 'INSERT_CONTENT_TO_CHAT') {
+    try {
+      const result = insertContextIntoChat({
+        title: 'Last Saved Content',
+        body: message.payload.content
+      });
+      console.log('Insert last content result:', result);
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error inserting last content:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      sendResponse({ success: false, error: errorMessage });
+    }
+  }
+
   if (message.action === 'SUMMARIZE_CHAT') {
     try {
       const result = insertSummarizePrompt(
@@ -243,7 +258,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 
-  return true; // Keep message channel open for async response
+  return false; // Synchronous response, close channel immediately
 });
 
 function insertContextIntoChat(context: { title: string; body: string; contextType?: string }): boolean {
@@ -281,7 +296,7 @@ ${trimmedBody}`;
       const currentValue = textareaEl.value.trim();
 
       // Only add spacing if there's existing content
-      const newValue = currentValue ? `${currentValue}\n\n${contextText}` : contextText;
+      const newValue = currentValue + contextText;
 
       textareaEl.value = newValue;
 
@@ -299,9 +314,7 @@ ${trimmedBody}`;
       const formattedContext = convertTextToHtml(contextText);
 
       // Only add spacing if there's existing content
-      const newContent = currentContent ?
-        `${currentContent}<br><br>${formattedContext}` :
-        formattedContext;
+      const newContent = currentContent + formattedContext;
 
       textarea.innerHTML = newContent;
 
@@ -426,7 +439,7 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
       let newValue;
       if (currentValue.length > 0) {
         // Add exactly two newlines between existing content and new prompt
-        newValue = currentValue + '\n\n' + cleanPrompt;
+        newValue = currentValue + cleanPrompt;
       } else {
         // If no existing content, just use the clean prompt
         newValue = cleanPrompt;
@@ -480,7 +493,7 @@ function insertSummarizePrompt(summaryType: string = 'quick', persona: string = 
       // Build new content with proper spacing
       let newContent;
       if (cleanedContent.length > 0) {
-        newContent = cleanedContent + '<br><br>' + formattedPrompt;
+        newContent = cleanedContent + formattedPrompt;
       } else {
         newContent = formattedPrompt;
       }

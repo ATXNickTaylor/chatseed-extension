@@ -31,18 +31,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Handle organized exports from organize modal
   if (message.action === 'EXPORT_ORGANIZED_CONTEXTS') {
-    handleOrganizedExport(message.method, message.contexts).then(() => {
-      sendResponse({ success: true });
-    });
+    handleOrganizedExport(message.method, message.contexts)
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch((error) => {
+        console.error('Export error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
     return true; // Only now, because sendResponse is called asynchronously
   }
 
   // Handle quick exports from organize modal
   if (message.action === 'EXPORT_QUICK_CONTEXTS') {
-    handleQuickExport(message.type, message.contexts, message.filename).then(() => {
-      sendResponse({ success: true });
-    });
+    handleQuickExport(message.type, message.contexts, message.filename)
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch((error) => {
+        console.error('Export error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
     return true;
+  }
+
+  // Handle insert content to chat from command center
+  if (message.action === 'INSERT_CONTENT_TO_CHAT') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error forwarding message:', chrome.runtime.lastError);
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            sendResponse(response || { success: true });
+          }
+        });
+      } else {
+        sendResponse({ success: false, error: 'No active tab found' });
+      }
+    });
+    return true; // Keep message channel open for async response
+  }
+
+  // Handle open popup request
+  if (message.action === 'OPEN_POPUP') {
+    // Chrome doesn't allow programmatically opening popup, but we can acknowledge
+    console.log('Popup open request received - user should click extension icon');
+    sendResponse({ success: true, message: 'Please click the ChatSeed extension icon' });
+    return false;
   }
 
   sendResponse({ received: true });
