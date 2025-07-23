@@ -3,7 +3,6 @@
 # ChatSeed - AI Context Manager
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen)](https://chromewebstore.google.com/detail/chatseed/odidbkfijbkniijmcmfnadibpcfhmgoo)
-[![Public Release](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/ATXNickTaylor/chatseed-extension/releases/)
 
 ChatSeed enables you to save conversation contexts from AI platforms and seamlessly bridge them across different chat sessions. Works with both ChatGPT and Gemini (for now) - save from one, use in the other!
 
